@@ -7,6 +7,10 @@ from anndata import AnnData
 # Load environment variables from .env file
 load_dotenv()
 root_directory = Path(get_key(".env", "ROOT_DIRECTORY"))
+dataset_path = root_directory / "Dataset"
+
+for dir in ["raw", "copper", "silver", "gold"]:
+    (dataset_path / dir).mkdir(parents=True, exist_ok=True)
 
 # Read matrix data and transpose it to have cells as rows and genes as columns
 adata: AnnData = sc.read_mtx(root_directory / "Dataset" / "raw" / "matrix.mtx").T

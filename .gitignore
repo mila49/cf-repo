@@ -8,3 +8,4 @@ raw/
 *.csv
 *.rds
 *.mtx
+*.h5ad
