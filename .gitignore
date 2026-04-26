@@ -1,0 +1,10 @@
+# Directories
+__pycache__/
+postgrau/
+Dataset/raw/
+
+# Files
+*.env
+*.csv
+*.rds
+*.mtx
