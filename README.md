@@ -4,6 +4,14 @@
 .\.venv\Scripts\Activate.ps1
 ```
 
+# Data
+
+You need to add the matrix.mtx file inside the folder repo (approx memory: 1GB)
+
+```python
+matrix.mtx
+```
+
 # AnnData Object Structure
 
 ## Overview
