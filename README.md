@@ -1,3 +1,9 @@
+# Activate virutal environemnt
+
+```python
+.\.venv\Scripts\Activate.ps1
+```
+
 # AnnData Object Structure
 
 ## Overview
