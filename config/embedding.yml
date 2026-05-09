@@ -1,0 +1,5 @@
+
+data_path: "./data/matrix.mtx"
+
+gen_reduction:
+  n_genes: 2000
