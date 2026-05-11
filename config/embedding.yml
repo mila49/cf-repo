@@ -1,5 +1,13 @@
+data_path: "./matrix.mtx"
 
-data_path: "./data/matrix.mtx"
+n_top_genes: 1000
+batch_size: 32
+latent_dim: 16
+epochs: 5 #20
+learning_rate: 0.001
+kl_weight: 0.001
 
-gen_reduction:
-  n_genes: 2000
+output_adata_path: "adata_vae.h5ad"
+output_model_path: "vae_model.pt"
+
+device: "cpu"
