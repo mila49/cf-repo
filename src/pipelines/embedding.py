@@ -1,6 +1,10 @@
+import os
+
 import anndata as ad
 import yaml
 import torch
+import wandb
+from dotenv import load_dotenv
 from torch.utils.data import DataLoader
 
 from src.utils.data_loader import load_data, preprocess_data
@@ -38,7 +42,7 @@ class EmbeddingPipeline:
             self.dataset,
             batch_size=self.config["batch_size"],
             shuffle=True,
-            num_workers=0,
+            num_workers=self.config.get("num_workers", 0),
         )
 
     def setup_model(self):
@@ -55,6 +59,14 @@ class EmbeddingPipeline:
         )
 
     def train(self):
+        load_dotenv()
+
+        run = wandb.init(
+            entity=os.environ["WANDB_ENTITY"],
+            project=os.environ["WANDB_PROJECT"],
+            config=self.config,
+        )
+
         epochs = self.config["epochs"]
         kl_weight = self.config.get("kl_weight", 0.001)
 
@@ -83,6 +95,9 @@ class EmbeddingPipeline:
 
             avg_loss = total_loss / len(self.dataset)
             print(f"Epoch {epoch + 1:03d} | loss = {avg_loss:.4f}")
+        run.log({"loss": avg_loss})
+
+        run.finish()
 
     def generate_embeddings(self):
         self.model.eval()
@@ -92,7 +107,7 @@ class EmbeddingPipeline:
             self.dataset,
             batch_size=self.config["batch_size"],
             shuffle=False,
-            num_workers=0,
+            num_workers=self.config.get("num_workers", 0),
         )
 
         with torch.no_grad():
