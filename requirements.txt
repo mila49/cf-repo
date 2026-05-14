@@ -12,5 +12,6 @@ h5py >= 3.8.0
 
 python-dotenv >= 0.9.9
 torch >= 2.0.1
+wandb >= 0.16.0
 
 pyYAML >= 6.0.2
