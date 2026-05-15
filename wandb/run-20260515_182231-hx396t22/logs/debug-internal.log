@@ -1,0 +1,17 @@
+{"time":"2026-05-15T18:22:34.1216655+02:00","level":"INFO","msg":"wandb-core"}
+{"time":"2026-05-15T18:22:34.1227354+02:00","level":"INFO","msg":"stream: starting","core version":"0.27.0"}
+{"time":"2026-05-15T18:22:35.5681308+02:00","level":"INFO","msg":"stream: created new stream","id":"hx396t22"}
+{"time":"2026-05-15T18:22:35.5681308+02:00","level":"INFO","msg":"handler: started"}
+{"time":"2026-05-15T18:22:35.5715189+02:00","level":"INFO","msg":"stream: started"}
+{"time":"2026-05-15T18:22:35.5715189+02:00","level":"INFO","msg":"writer: started","stream_id":"hx396t22"}
+{"time":"2026-05-15T18:22:35.5715189+02:00","level":"INFO","msg":"sender: started"}
+{"time":"2026-05-15T18:22:35.7580282+02:00","level":"ERROR","msg":"api: HTTP error","status":404,"method":"POST","url":"https://api.wandb.ai/graphql"}
+{"time":"2026-05-15T18:22:35.7592687+02:00","level":"ERROR","msg":"runupserter: failed to init run","error":"returned error 404: {\"data\":{\"upsertBucket\":null},\"errors\":[{\"message\":\"entity lucia-calvo-hernandez not found during upsertBucket\",\"path\":[\"upsertBucket\"]}]}"}
+{"time":"2026-05-15T18:22:35.7784314+02:00","level":"ERROR","msg":"sender: uploadConfigFile: runhandle: run not yet initialized"}
+{"time":"2026-05-15T18:22:35.77931+02:00","level":"ERROR","msg":"runfiles: runhandle: run not yet initialized"}
+{"time":"2026-05-15T18:22:35.7798758+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2026-05-15T18:22:35.7798758+02:00","level":"INFO","msg":"stream: finishing up"}
+{"time":"2026-05-15T18:22:35.7798758+02:00","level":"INFO","msg":"handler: closed"}
+{"time":"2026-05-15T18:22:35.7803807+02:00","level":"INFO","msg":"sender: closed"}
+{"time":"2026-05-15T18:22:35.7803807+02:00","level":"INFO","msg":"stream: all finished"}
+{"time":"2026-05-15T18:22:35.7842403+02:00","level":"ERROR","msg":"stream: runURL: runhandle: run not yet initialized"}

@@ -1,0 +1,65 @@
+_wandb:
+    value:
+        cli_version: 0.27.0
+        e:
+            lthp5lhhwvh1l2d2n0v7xz0rxblhs51j:
+                cpu_count: 10
+                cpu_count_logical: 12
+                disk:
+                    /:
+                        total: "1022829260800"
+                        used: "999215722496"
+                email: lucia.calvo.hernandez@estudiantat.upc.edu
+                executable: C:\Users\lucii\miniconda3\envs\DLProject\python.exe
+                git:
+                    commit: 01572b2353175ccc4774c717d5ef4e1ea2b8a510
+                    remote: https://github.com/mila49/cf-repo.git
+                host: DESKTOP-F08IP0A
+                memory:
+                    total: "16858472448"
+                os: Windows-11-10.0.26200-SP0
+                program: -m src.main
+                python: CPython 3.12.13
+                root: C:\Users\lucii\OneDrive\Documentos\GitHub\cf-repo
+                startedAt: "2026-05-15T16:25:00.401061Z"
+                writerId: lthp5lhhwvh1l2d2n0v7xz0rxblhs51j
+        m: []
+        python_version: 3.12.13
+        t:
+            "1":
+                - 1
+                - 5
+                - 53
+            "2":
+                - 1
+                - 5
+                - 53
+            "3":
+                - 2
+                - 16
+            "4": 3.12.13
+            "5": 0.27.0
+            "8":
+                - 3
+            "12": 0.27.0
+            "13": windows-amd64
+batch_size:
+    value: 32
+data_path:
+    value: ./matrix.mtx
+device:
+    value: cpu
+epochs:
+    value: 20
+kl_weight:
+    value: 0.001
+latent_dim:
+    value: 30
+learning_rate:
+    value: 0.001
+n_top_genes:
+    value: 5000
+output_adata_path:
+    value: adata_vae.h5ad
+output_model_path:
+    value: vae_model.pt

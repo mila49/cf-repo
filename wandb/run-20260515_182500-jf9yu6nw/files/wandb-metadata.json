@@ -1,0 +1,26 @@
+{
+  "os": "Windows-11-10.0.26200-SP0",
+  "python": "CPython 3.12.13",
+  "startedAt": "2026-05-15T16:25:00.401061Z",
+  "program": "-m src.main",
+  "git": {
+    "remote": "https://github.com/mila49/cf-repo.git",
+    "commit": "01572b2353175ccc4774c717d5ef4e1ea2b8a510"
+  },
+  "email": "lucia.calvo.hernandez@estudiantat.upc.edu",
+  "root": "C:\\Users\\lucii\\OneDrive\\Documentos\\GitHub\\cf-repo",
+  "host": "DESKTOP-F08IP0A",
+  "executable": "C:\\Users\\lucii\\miniconda3\\envs\\DLProject\\python.exe",
+  "cpu_count": 10,
+  "cpu_count_logical": 12,
+  "disk": {
+    "/": {
+      "total": "1022829260800",
+      "used": "999215722496"
+    }
+  },
+  "memory": {
+    "total": "16858472448"
+  },
+  "writerId": "lthp5lhhwvh1l2d2n0v7xz0rxblhs51j"
+}

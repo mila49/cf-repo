@@ -1,0 +1,13 @@
+2026-05-15 18:09:56,150 INFO    MainThread:11856 [wandb_setup.py:_flush():81] Current SDK version is 0.27.0
+2026-05-15 18:09:56,150 INFO    MainThread:11856 [wandb_setup.py:_flush():81] Configure stats pid to 11856
+2026-05-15 18:09:56,150 INFO    MainThread:11856 [wandb_setup.py:_flush():81] Loading settings from environment variables
+2026-05-15 18:09:56,150 INFO    MainThread:11856 [wandb_init.py:setup_run_log_directory():723] Logging user logs to C:\Users\lucii\OneDrive\Documentos\GitHub\cf-repo\wandb\run-20260515_180956-0gn8pyd7\logs\debug.log
+2026-05-15 18:09:56,150 INFO    MainThread:11856 [wandb_init.py:setup_run_log_directory():724] Logging internal logs to C:\Users\lucii\OneDrive\Documentos\GitHub\cf-repo\wandb\run-20260515_180956-0gn8pyd7\logs\debug-internal.log
+2026-05-15 18:09:56,150 INFO    MainThread:11856 [wandb_init.py:init():851] calling init triggers
+2026-05-15 18:09:56,150 INFO    MainThread:11856 [wandb_init.py:init():856] wandb.init called with sweep_config: {}
+config: {'data_path': './matrix.mtx', 'n_top_genes': 5000, 'batch_size': 32, 'latent_dim': 30, 'epochs': 20, 'learning_rate': 0.001, 'kl_weight': 0.001, 'output_adata_path': 'adata_vae.h5ad', 'output_model_path': 'vae_model.pt', 'device': 'cpu', '_wandb': {}}
+2026-05-15 18:09:56,150 INFO    MainThread:11856 [wandb_init.py:init():899] starting backend
+2026-05-15 18:09:58,415 INFO    MainThread:11856 [wandb_init.py:init():914] sending inform_init request
+2026-05-15 18:09:58,748 INFO    MainThread:11856 [wandb_init.py:init():919] backend started and connected
+2026-05-15 18:09:58,751 INFO    MainThread:11856 [wandb_init.py:init():989] updated telemetry
+2026-05-15 18:09:58,792 INFO    MainThread:11856 [wandb_init.py:init():1012] communicating run to backend with 90.0 second timeout
