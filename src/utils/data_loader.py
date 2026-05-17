@@ -1,4 +1,5 @@
 from scipy.io import mmread
+import pandas as pd
 import anndata as ad
 import numpy as np
 import scanpy as sc
@@ -9,13 +10,19 @@ def load_data(file_path: str) -> ad.AnnData:
     Load a .mtx file and return an AnnData object.
     Matrix is transposed because .mtx files are often genes x cells,
     while AnnData expects cells x genes.
+    We also load gene names and metadata from separate CSV files and 
+    attach them to the AnnData object.
+
     """
     matrix = mmread(file_path).T.tocsr().astype(np.float32)
 
     adata = ad.AnnData(X=matrix)
 
-    adata.obs_names = [f"Cell_{i}" for i in range(adata.n_obs)]
-    adata.var_names = [f"Gene_{i}" for i in range(adata.n_vars)]
+    genes = pd.read_csv("genes.csv", header=None)
+    metadata = pd.read_csv("metadata.csv", index_col=0)
+
+    adata.var_names = genes[0].astype(str).values
+    adata.obs = metadata
 
     print("Loaded data:", adata)
 

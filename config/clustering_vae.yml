@@ -1,0 +1,10 @@
+input_adata_path: "adata_vae.h5ad"
+output_adata_path: "adata_vae_clustered.h5ad"
+
+embedding_key: "X_vae"
+leiden_key: "leiden"
+
+n_neighbors: 15
+resolution: 0.55
+
+reference_label: "minor"
