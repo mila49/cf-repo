@@ -1,0 +1,5 @@
+data_path: "adata_ae.h5ad"
+
+use_rep: "X_ae"
+n_neighbors: 15
+resolution: 0.5

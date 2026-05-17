@@ -3,6 +3,12 @@ from torch import nn
 
 
 class VAE(nn.Module):
+    """
+    Variational Autoencoder (VAE) implementation for dimensionality reduction of single-cell data.
+    The architecture consists of an encoder that maps input data to a latent space, and a decoder that
+    reconstructs the input from the latent representation.
+    The loss function combines a reconstruction loss (MSE) and a KL divergence term to regularize the latent space.
+    """
     def __init__(self, input_dim: int, latent_dim: int = 16):
         super().__init__()
 
@@ -24,19 +30,23 @@ class VAE(nn.Module):
             nn.Linear(128, input_dim),
         )
 
+
     def encode(self, x):
         h = self.encoder(x)
         mu = self.mu(h)
         logvar = self.logvar(h)
         return mu, logvar
 
+
     def reparameterize(self, mu, logvar):
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
         return mu + eps * std
 
+
     def decode(self, z):
         return self.decoder(z)
+
 
     def forward(self, x):
         mu, logvar = self.encode(x)

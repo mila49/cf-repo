@@ -2,22 +2,37 @@ from scipy.io import mmread
 import anndata as ad
 import numpy as np
 import scanpy as sc
+from pathlib import Path
 
 
-def load_data(file_path: str) -> ad.AnnData:
+def load_data(file_path: Path) -> ad.AnnData:
     """
-    Load a .mtx file and return an AnnData object.
-    Matrix is transposed because .mtx files are often genes x cells,
-    while AnnData expects cells x genes.
+    Load either a .mtx or .h5ad file and return an AnnData object.
+    - .mtx files are transposed because they are usually genes x cells,
+      while AnnData expects cells x genes.
+    - .h5ad files are loaded directly as they already contain proper AnnData structure.
     """
-    matrix = mmread(file_path).T.tocsr().astype(np.float32)
+    file_path = Path(file_path)
+    file_extension = file_path.suffix.lower()
 
-    adata = ad.AnnData(X=matrix)
+    if file_extension == ".mtx":
+        # Load .mtx matrix file
+        matrix = mmread(file_path).T.tocsr().astype(np.float32)
+        adata = ad.AnnData(X=matrix)
+        adata.obs_names = [f"Cell_{i}" for i in range(adata.n_obs)]
+        adata.var_names = [f"Gene_{i}" for i in range(adata.n_vars)]
 
-    adata.obs_names = [f"Cell_{i}" for i in range(adata.n_obs)]
-    adata.var_names = [f"Gene_{i}" for i in range(adata.n_vars)]
+    elif file_extension == ".h5ad":
+        # Load .h5ad file directly
+        adata = ad.read_h5ad(file_path)
 
-    print("Loaded data:", adata)
+    else:
+        raise ValueError(
+            f"Unsupported file format: {file_extension}. "
+            f"Supported formats: .mtx, .h5ad"
+        )
+
+    print(f"Loaded data from {file_path.name}:", adata)
 
     return adata
 

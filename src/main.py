@@ -1,9 +1,16 @@
-from src.pipelines.embedding import EmbeddingPipeline
+from .pipelines.embedding import VAEPipeline, AEPipeline
+from .pipelines.clustering import LeidenClusteringPipeline
+
+from src.clustering import LeidenClustering
 
 
 if __name__ == "__main__":
-    pipeline = EmbeddingPipeline(
-        config_path="config/embedding.yml"
+    # vae_pipeline = VAEPipeline(
+    #     config_path="vae_embedding.yml"
+    # )
+    ae_pipeline = AEPipeline(
+        config_path="ae_embedding.yml"
     )
 
-    pipeline.run()
+    # vae_pipeline.run()
+    ae_pipeline.run()

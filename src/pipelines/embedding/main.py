@@ -1,35 +1,38 @@
 import os
+from abc import abstractmethod
 
 import anndata as ad
-import yaml
+from anndata import AnnData
 import torch
+from torch.nn import Module
+from torch.optim import Optimizer
 import wandb
 from dotenv import load_dotenv
 from torch.utils.data import DataLoader
 
 from src.utils.data_loader import load_data, preprocess_data
 from src.utils.datasets import SparseAnnDataset
-from src.models.vae import VAE, vae_loss
+from ..main import Pipeline
 
 
-class EmbeddingPipeline:
-    def __init__(self, config_path: str):
-        self.config = self.load_config(config_path)
+class EmbeddingPipeline(Pipeline):
+    def __init__(self, config_file: str):
+        super().__init__(config_file)
 
         self.device = self.config.get("device", "cpu")
 
-        self.adata = None
-        self.dataset = None
-        self.loader = None
-        self.model = None
-        self.optimizer = None
+        self.adata: AnnData = None
+        self.dataset: SparseAnnDataset = None
+        self.loader: DataLoader = None
+        self.model: type[Module] = None
+        self.optimizer: type[Optimizer] = None
 
-    def load_config(self, config_path: str) -> dict:
-        with open(config_path, "r") as f:
-            return yaml.safe_load(f)
 
-    def setup_data(self):
-        self.adata = load_data(self.config["data_path"])
+    def setup_data(self) -> None:
+        """
+        Setup the data for training.
+        """
+        self.adata = load_data(self.root_dir / self.config["data_path"])
 
         self.adata = preprocess_data(
             self.adata,
@@ -45,30 +48,45 @@ class EmbeddingPipeline:
             num_workers=self.config.get("num_workers", 0),
         )
 
+
+    @abstractmethod
     def setup_model(self):
-        input_dim = self.adata.shape[1]
+        """
+        Setup the model and optimizer.
+        """
+        raise NotImplementedError("Must be implemented in subclass")
 
-        self.model = VAE(
-            input_dim=input_dim,
-            latent_dim=self.config["latent_dim"],
-        ).to(self.device)
 
-        self.optimizer = torch.optim.Adam(
-            self.model.parameters(),
-            lr=self.config["learning_rate"],
-        )
+    @abstractmethod
+    def compute_loss(self, **kwargs):
+        """
+        Compute the loss for a given batch of data.
+        """
+        raise NotImplementedError("Must be implemented in subclass")
+
+
+    @abstractmethod
+    def get_latent_representation(self, **kwargs):
+        """
+        Get the latent representation for a given batch of data.
+        """
+        raise NotImplementedError("Must be implemented in subclass")
+
 
     def train(self):
+        """
+        Train the embedding model.
+        """
         load_dotenv()
 
         run = wandb.init(
             entity=os.environ["WANDB_ENTITY"],
             project=os.environ["WANDB_PROJECT"],
+            job_type="embedding",
             config=self.config,
         )
 
         epochs = self.config["epochs"]
-        kl_weight = self.config.get("kl_weight", 0.001)
 
         for epoch in range(epochs):
             self.model.train()
@@ -77,15 +95,7 @@ class EmbeddingPipeline:
             for batch_x in self.loader:
                 batch_x = batch_x.to(self.device)
 
-                x_hat, mu, logvar, z = self.model(batch_x)
-
-                loss = vae_loss(
-                    x_hat,
-                    batch_x,
-                    mu,
-                    logvar,
-                    kl_weight=kl_weight,
-                )
+                loss = self.compute_loss(batch_x)
 
                 self.optimizer.zero_grad()
                 loss.backward()
@@ -95,13 +105,17 @@ class EmbeddingPipeline:
 
             avg_loss = total_loss / len(self.dataset)
             print(f"Epoch {epoch + 1:03d} | loss = {avg_loss:.4f}")
-        run.log({"loss": avg_loss})
+            run.log({"loss": avg_loss})
 
         run.finish()
 
+
     def generate_embeddings(self):
+        """
+        Generate the latent embeddings for all cells and store them in adata.obsm["X_emb"].
+        """
         self.model.eval()
-        latents = []
+        latents = [] 
 
         eval_loader = DataLoader(
             self.dataset,
@@ -114,12 +128,17 @@ class EmbeddingPipeline:
             for batch_x in eval_loader:
                 batch_x = batch_x.to(self.device)
 
-                mu, logvar = self.model.encode(batch_x)
-                latents.append(mu.cpu())
+                latent = self.get_latent_representation(batch_x)
+                latents.append(latent.cpu())
 
-        self.adata.obsm["X_vae"] = torch.cat(latents, dim=0).numpy()
+        key_name = self.config.get("output_obsm_key", "X_emb")
+        self.adata.obsm[key_name] = torch.cat(latents, dim=0).numpy()
+
 
     def save_outputs(self):
+        """
+        Save the AnnData object with embeddings and the trained model weights.
+        """
         ad.settings.allow_write_nullable_strings = True
 
         self.adata.write(self.config["output_adata_path"])
@@ -131,6 +150,7 @@ class EmbeddingPipeline:
         print("Saved:")
         print(self.config["output_adata_path"])
         print(self.config["output_model_path"])
+
 
     def run(self):
         self.setup_data()

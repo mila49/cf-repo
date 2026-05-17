@@ -2,6 +2,7 @@
 __pycache__/
 postgrau/
 raw/
+wandb/
 
 # Files
 *.env
@@ -9,3 +10,4 @@ raw/
 *.rds
 *.mtx
 *.h5ad
+*.pt
