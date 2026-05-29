@@ -1,0 +1,83 @@
+_wandb:
+    value:
+        cli_version: 0.27.0
+        e:
+            dua32lgsqsigew43r3grmlc91bgaiy5v:
+                cpu_count: 10
+                cpu_count_logical: 12
+                disk:
+                    /:
+                        total: "1022829260800"
+                        used: "1006085042176"
+                email: lucia.calvo.hernandez@estudiantat.upc.edu
+                executable: C:\Users\lucii\miniconda3\envs\DLProject\python.exe
+                git:
+                    commit: a083177ce685e846305e23583e2fe2309886ec89
+                    remote: https://github.com/mila49/cf-repo.git
+                host: DESKTOP-F08IP0A
+                memory:
+                    total: "16858472448"
+                os: Windows-11-10.0.26200-SP0
+                program: -m src.main
+                python: CPython 3.12.13
+                root: C:\Users\lucii\OneDrive\Documentos\GitHub\cf-repo
+                startedAt: "2026-05-29T12:51:34.710745Z"
+                writerId: dua32lgsqsigew43r3grmlc91bgaiy5v
+        m: []
+        python_version: 3.12.13
+        t:
+            "1":
+                - 1
+                - 5
+                - 53
+            "2":
+                - 1
+                - 5
+                - 53
+            "3":
+                - 2
+                - 16
+            "4": 3.12.13
+            "5": 0.27.0
+            "8":
+                - 3
+            "12": 0.27.0
+            "13": windows-amd64
+batch_key:
+    value: null
+batch_size:
+    value: 32
+copy:
+    value: true
+data_path:
+    value: ./matrix.mtx
+device:
+    value: cpu
+epochs:
+    value: 20
+hvg_flavor:
+    value: seurat
+kl_weight:
+    value: 0.001
+latent_dim:
+    value: 30
+learning_rate:
+    value: 0.001
+max_genes:
+    value: 6000
+max_pct_mt:
+    value: 15
+min_cells:
+    value: 3
+min_genes:
+    value: 200
+n_top_genes:
+    value: 5000
+normalization:
+    value: log_total
+output_adata_path:
+    value: adata_vae.h5ad
+output_model_path:
+    value: vae_model.pt
+target_sum:
+    value: 10000

@@ -1,0 +1,24 @@
+2026-05-29 14:51:34,717 INFO    MainThread:19032 [wandb_setup.py:_flush():81] Current SDK version is 0.27.0
+2026-05-29 14:51:34,718 INFO    MainThread:19032 [wandb_setup.py:_flush():81] Configure stats pid to 19032
+2026-05-29 14:51:34,718 INFO    MainThread:19032 [wandb_setup.py:_flush():81] Loading settings from environment variables
+2026-05-29 14:51:34,718 INFO    MainThread:19032 [wandb_init.py:setup_run_log_directory():723] Logging user logs to C:\Users\lucii\OneDrive\Documentos\GitHub\cf-repo\wandb\run-20260529_145134-2d7t50rz\logs\debug.log
+2026-05-29 14:51:34,718 INFO    MainThread:19032 [wandb_init.py:setup_run_log_directory():724] Logging internal logs to C:\Users\lucii\OneDrive\Documentos\GitHub\cf-repo\wandb\run-20260529_145134-2d7t50rz\logs\debug-internal.log
+2026-05-29 14:51:34,719 INFO    MainThread:19032 [wandb_init.py:init():851] calling init triggers
+2026-05-29 14:51:34,719 INFO    MainThread:19032 [wandb_init.py:init():856] wandb.init called with sweep_config: {}
+config: {'data_path': './matrix.mtx', 'n_top_genes': 5000, 'batch_size': 32, 'latent_dim': 30, 'epochs': 20, 'learning_rate': 0.001, 'kl_weight': 0.001, 'output_adata_path': 'adata_vae.h5ad', 'output_model_path': 'vae_model.pt', 'device': 'cpu', 'min_genes': 200, 'min_cells': 3, 'max_genes': 6000, 'max_pct_mt': 15.0, 'normalization': 'log_total', 'target_sum': 10000.0, 'hvg_flavor': 'seurat', 'batch_key': None, 'copy': True, '_wandb': {}}
+2026-05-29 14:51:34,719 INFO    MainThread:19032 [wandb_init.py:init():899] starting backend
+2026-05-29 14:51:37,597 INFO    MainThread:19032 [wandb_init.py:init():914] sending inform_init request
+2026-05-29 14:51:39,347 INFO    MainThread:19032 [wandb_init.py:init():919] backend started and connected
+2026-05-29 14:51:39,350 INFO    MainThread:19032 [wandb_init.py:init():989] updated telemetry
+2026-05-29 14:51:39,407 INFO    MainThread:19032 [wandb_init.py:init():1012] communicating run to backend with 90.0 second timeout
+2026-05-29 14:51:39,751 INFO    MainThread:19032 [wandb_init.py:init():1057] starting run threads in backend
+2026-05-29 14:51:40,129 INFO    MainThread:19032 [wandb_run.py:_console_start():2509] atexit reg
+2026-05-29 14:51:40,129 INFO    MainThread:19032 [wandb_run.py:_redirect():2359] redirect: wrap_raw
+2026-05-29 14:51:40,130 INFO    MainThread:19032 [wandb_run.py:_redirect():2428] Wrapping output streams.
+2026-05-29 14:51:40,131 INFO    MainThread:19032 [wandb_run.py:_redirect():2451] Redirects installed.
+2026-05-29 14:51:40,142 INFO    MainThread:19032 [wandb_init.py:init():1095] run started, returning control to user process
+2026-05-29 15:08:04,112 INFO    MainThread:19032 [wandb_run.py:_finish():2271] finishing run clara-india-universitat-polit-cnica-de-catalunya/CF-AIDL_Project/2d7t50rz
+2026-05-29 15:08:04,113 INFO    MainThread:19032 [wandb_run.py:_atexit_cleanup():2476] got exitcode: 0
+2026-05-29 15:08:04,114 INFO    MainThread:19032 [wandb_run.py:_restore():2458] restore
+2026-05-29 15:08:04,114 INFO    MainThread:19032 [wandb_run.py:_restore():2464] restore done
+2026-05-29 15:08:05,845 INFO    MainThread:19032 [wandb_run.py:_footer_sync_info():3877] logging synced files
