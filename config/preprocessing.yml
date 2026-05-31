@@ -1,0 +1,38 @@
+data_path: "./matrix.mtx"
+
+# Number of highly variable genes to keep
+n_top_genes: 5000
+
+# Filter cells with fewer than this number of detected genes
+min_genes: 200
+
+# Filter genes expressed in fewer than this number of cells
+# scGGAN uses 10, so this is a reasonable choice.
+min_cells: 3
+
+# Optional QC filters
+# Set to null to disable.
+max_genes: 6000
+max_pct_mt: 15.0
+
+# Normalization method
+# Recommended for clustering / VAE:
+#   "log_total"
+# Paper-specific scGGAN-style:
+#   "max_per_cell"
+normalization: "log_total"
+
+# Used only when normalization == "log_total"
+target_sum: 10000.0
+
+# Highly variable gene selection
+# "seurat" uses log-normalized data.
+# "seurat_v3" uses raw counts from layer="counts".
+hvg_flavor: "seurat"
+
+# Optional batch/sample key in adata.obs
+# Set to null if you do not have this metadata.
+batch_key: null
+
+# Whether preprocess_data should copy the input AnnData
+copy: true
