@@ -1,5 +1,4 @@
-input_adata_path: "adata_ae.h5ad"
-output_adata_path: "adata_ae_clustered.h5ad"
+output_adata_path: "adata_ae_leiden.h5ad"
 
 embedding_key: "X_ae"
 leiden_key: "leiden_clusters"

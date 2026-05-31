@@ -1,5 +1,7 @@
-data_path: "adata_ae.h5ad"
+input_adata_path: adata_ae.h5ad
+output_adata_path: adata_ae_leiden.h5ad
 
-use_rep: "X_ae"
+embedding_key: X_ae
+leiden_key: leiden_clusters
 n_neighbors: 15
-resolution: 0.5
+resolution: 3
