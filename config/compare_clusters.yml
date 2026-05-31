@@ -1,0 +1,10 @@
+input_adata_path: "adata_ae.h5ad"
+output_adata_path: "adata_ae_clustered.h5ad"
+
+embedding_key: "X_ae"
+leiden_key: "leiden_clusters"
+
+n_neighbors: 15
+resolution: 3
+
+reference_label: "major"
