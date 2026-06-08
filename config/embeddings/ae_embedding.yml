@@ -1,0 +1,25 @@
+wb_sweep: true
+data_path: "Dataset/raw/matrix.mtx"
+
+parameters:
+  batch_size:
+    - 64
+  latent_dim: 
+    - 30
+    - 40
+    - 50
+  epochs:
+    - 40
+    - 45
+    - 50
+  learning_rate:
+    - 0.001
+  dropout_rate:
+    - 0.3
+
+n_top_genes: 5000
+output_obsm_key: "X_ae"
+output_adata_path: "adata_ae.h5ad"
+output_model_path: "ae_model.pt"
+
+device: "cpu"

@@ -4,6 +4,6 @@ embedding_key: "X_ae"
 leiden_key: "leiden_clusters"
 
 n_neighbors: 15
-resolution: 3
+resolution: 0.5
 
 reference_label: "major"

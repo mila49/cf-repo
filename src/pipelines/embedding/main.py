@@ -73,19 +73,24 @@ class EmbeddingPipeline(Pipeline):
         raise NotImplementedError("Must be implemented in subclass")
 
 
+    def _run_training_impl(self):
+        """
+        Internal implementation of the complete training pipeline.
+        Called either directly (if no sweep) or within sweep context.
+        """
+        self.setup_data()
+        self.setup_model()
+        self.train()
+        self.generate_embeddings()
+        self.save_outputs()
+
+
     def train(self):
         """
         Train the embedding model.
+        Only executes the training loop. Setup and save must be called separately
+        or within _run_training_impl() when using sweeps.
         """
-        load_dotenv()
-
-        run = wandb.init(
-            entity=os.environ["WANDB_ENTITY"],
-            project=os.environ["WANDB_PROJECT"],
-            job_type="embedding",
-            config=self.config,
-        )
-
         epochs = self.config["epochs"]
 
         for epoch in range(epochs):
@@ -105,9 +110,7 @@ class EmbeddingPipeline(Pipeline):
 
             avg_loss = total_loss / len(self.dataset)
             print(f"Epoch {epoch + 1:03d} | loss = {avg_loss:.4f}")
-            run.log({"loss": avg_loss})
-
-        run.finish()
+            wandb.log({"loss": avg_loss})
 
 
     def generate_embeddings(self):
@@ -153,8 +156,27 @@ class EmbeddingPipeline(Pipeline):
 
 
     def run(self):
-        self.setup_data()
-        self.setup_model()
-        self.train()
-        self.generate_embeddings()
-        self.save_outputs()
+        """
+        Run the embedding pipeline.
+        
+        If wb_sweep is enabled, delegates to run_with_sweep() which handles sweep initialization.
+        Otherwise, executes the full pipeline directly with W&B logging.
+        """
+        load_dotenv()
+        
+        if self.wb_sweep:
+            self.run_with_sweep(
+                train_function=self._run_training_impl,
+                project=os.environ["WANDB_PROJECT"],
+                entity=os.environ["WANDB_ENTITY"],
+            )
+        else:
+            run = wandb.init(
+                entity=os.environ["WANDB_ENTITY"],
+                project=os.environ["WANDB_PROJECT"],
+                job_type="embedding",
+                config=self.config,
+            )
+            
+            self._run_training_impl()
+            run.finish()
