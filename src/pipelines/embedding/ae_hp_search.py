@@ -264,3 +264,9 @@ if __name__ == "__main__":
         print(f"  {param}: {value}")
 
     print("="*50)
+    
+    print("\nBest hyperparameters:")
+    for param, value in best_run.config.items():
+        print(f"  {param}: {value}")
+
+    print("="*50)
