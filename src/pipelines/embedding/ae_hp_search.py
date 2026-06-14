@@ -171,20 +171,34 @@ def sweep_worker():
     db_score = davies_bouldin_score(embeddings, cluster_labels)
     ch_score = calinski_harabasz_score(embeddings, cluster_labels)
     
-    # Compute supervised metrics if reference labels are available
-    # Common column names for cell type annotations: 'cell_type', 'celltype', 'cluster', 'leiden', 'louvain'
-    reference_label_cols = ['cell_type', 'celltype', 'CellType', 'cluster', 'leiden', 'louvain', 'labels']
-    reference_labels = None
-    reference_col = None
+    # Posterior evaluation with reference labels (NOT used for model selection)
+    # We compute ARI/NMI separately for both major and minor annotations.
+    
+    reference_label_cols = ["major", "minor"]
+    
+    posterior_metrics = {}
+    
+    train_indices = train_dataset.indices
     
     for col in reference_label_cols:
+        ari_col = np.nan
+        nmi_col = np.nan
+        
         if col in pipeline.adata.obs.columns:
-            reference_col = col
-            # Get labels for train dataset only (matching embeddings)
             all_labels = pipeline.adata.obs[col].values
-            train_indices = train_dataset.indices
-            reference_labels = all_labels[train_indices]
-            break
+            reference_labels_train = all_labels[train_indices]
+            
+            try:
+                ari_col = adjusted_rand_score(reference_labels_train, cluster_labels)
+                nmi_col = normalized_mutual_info_score(reference_labels_train, cluster_labels)
+            except Exception as e:
+                print(f"Warning: Could not compute ARI/NMI for {col}: {e}")
+        
+        else:
+            print(f"Warning: Reference label column '{col}' not found in adata.obs")
+        
+        posterior_metrics[f"ari_reference_{col}"] = ari_col
+        posterior_metrics[f"nmi_reference_{col}"] = nmi_col
     
     metrics_to_log = {
         "train_mse": avg_train_mse,
@@ -195,19 +209,8 @@ def sweep_worker():
         "n_clusters": n_clusters,
         "leiden_resolution": leiden_resolution,
         "n_neighbors": n_neighbors,
+        **posterior_metrics,
     }
-    
-    if reference_labels is not None:
-        # Compute ARI and NMI
-        ari = adjusted_rand_score(reference_labels, cluster_labels)
-        nmi = normalized_mutual_info_score(reference_labels, cluster_labels)
-        
-        metrics_to_log["ari_reference"] = ari
-        metrics_to_log["nmi_reference"] = nmi
-        
-        print(f"\nSupervised Metrics (using '{reference_col}' as reference):")
-        print(f"  ARI: {ari:.4f}")
-        print(f"  NMI: {nmi:.4f}")
     
     # Log final metrics ONCE per hyperparameter combination
     wandb.log(metrics_to_log)
@@ -219,6 +222,34 @@ def sweep_worker():
     print(f"  Davies-Bouldin: {db_score:.4f}")
     print(f"  Calinski-Harabasz: {ch_score:.1f}")
     print(f"  N Clusters: {n_clusters}")
+    
+    # Print posterior reference-label metrics if available
+    posterior_keys = [
+        key for key in posterior_metrics.keys()
+        if key.startswith("ari_reference_") or key.startswith("nmi_reference_")
+    ]
+    
+    has_posterior_metrics = any(
+        not np.isnan(value)
+        for key, value in posterior_metrics.items()
+        if key in posterior_keys
+    )
+    
+    if has_posterior_metrics:
+        print("\nPosterior Reference-Label Evaluation:")
+        print("  (These are for evaluation only, NOT used for model selection)")
+        
+        for col in ["major", "minor"]:
+            ari_key = f"ari_reference_{col}"
+            nmi_key = f"nmi_reference_{col}"
+            
+            ari_value = posterior_metrics.get(ari_key, np.nan)
+            nmi_value = posterior_metrics.get(nmi_key, np.nan)
+            
+            if not np.isnan(ari_value):
+                print(f"\n  Reference Column: {col}")
+                print(f"    ARI: {ari_value:.5f}")
+                print(f"    NMI: {nmi_value:.5f}")
     
     run.finish()
 
@@ -253,17 +284,27 @@ if __name__ == "__main__":
     print(f"  Calinski-Harabasz: {best_run.summary.get('calinski_harabasz', 0):.1f}")
     print(f"  Optimal Clusters: {best_run.summary.get('n_clusters', 0)}")
     
-    # Show supervised metrics if available
-    if 'ari_reference' in best_run.summary:
-        print(f"\nSupervised Metrics (validation):")
-        print(f"  ARI: {best_run.summary.get('ari_reference', 0):.5f}")
-        print(f"  NMI: {best_run.summary.get('nmi_reference', 0):.5f}")
+    # Show posterior reference-label metrics if available
+    posterior_columns = [k for k in best_run.summary.keys() if k.startswith('ari_reference_') or k.startswith('nmi_reference_')]
+    has_posterior = any(k in best_run.summary for k in posterior_columns)
     
-    print("\nBest hyperparameters:")
-    for param, value in best_run.config.items():
-        print(f"  {param}: {value}")
-
-    print("="*50)
+    if has_posterior:
+        print(f"\n" + "-"*50)
+        print("POSTERIOR REFERENCE-LABEL EVALUATION")
+        print("(NOT used for model selection, only for evaluation)")
+        print("-"*50)
+        
+        for col in ['major', 'minor']:
+            ari_k = f'ari_reference_{col}'
+            nmi_k = f'nmi_reference_{col}'
+            ari_v = best_run.summary.get(ari_k, np.nan)
+            nmi_v = best_run.summary.get(nmi_k, np.nan)
+            
+            if not np.isnan(ari_v):
+                print(f"  Reference Column: {col}")
+                print(f"    ARI: {ari_v:.5f}")
+                if not np.isnan(nmi_v):
+                    print(f"    NMI: {nmi_v:.5f}")
     
     print("\nBest hyperparameters:")
     for param, value in best_run.config.items():
