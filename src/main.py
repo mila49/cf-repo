@@ -12,7 +12,7 @@ if __name__ == "__main__":
         config_path="embeddings/ae_embedding.yml"
     )
     # dae_pipeline = DAEPipeline(
-    #     config_path="dae_embedding.yml"
+    #     config_path="embeddings/dae_embedding.yml"
     # )
 
     # vae_pipeline.run()
