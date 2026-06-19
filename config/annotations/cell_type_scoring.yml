@@ -1,0 +1,24 @@
+# AnnData containing the final clusters
+adata_path: "adata_vae_clustered.h5ad"
+
+
+supplementary_table_path: "./Supplementary_Table_2.xlsx"
+
+# Comprobar cuál es el nombre correcto
+cluster_key: "leiden"
+
+# Use adata.raw for scoring.
+# This should contain normalized gene expression.
+use_raw: true
+
+# Mirar esto bien!!!!
+minimum_genes: 5
+
+# Reproducibility
+random_state: 42
+
+# Outputs
+output_adata_path: "results/annotation/adata_ae_annotated.h5ad"
+output_cluster_scores_path: "results/annotation/ae_cluster_scores.csv"
+output_assignments_path: "results/annotation/ae_cluster_assignments.csv"
+output_signature_coverage_path: "results/annotation/ae_signature_coverage.csv"
