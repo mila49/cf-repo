@@ -242,11 +242,24 @@ def sweep_worker():
     # Test all clustering methods and configurations
     print("\nRunning clustering search...")
 
+    clustering_cfg = pipeline.config.get("clustering_search", {})
+    leiden_cfg = clustering_cfg.get("leiden", {})
+    louvain_cfg = clustering_cfg.get("louvain", {})
+    kmeans_cfg = clustering_cfg.get("kmeans", {})
+    gmm_cfg = clustering_cfg.get("gaussian_mixture", {})
+
     all_clustering_results, best_clustering = (
         run_clustering_search(
             embeddings=val_embeddings,
             random_state=seed,
             scale_embeddings=True,
+            leiden_n_neighbors=leiden_cfg.get("n_neighbors"),
+            leiden_resolution=leiden_cfg.get("resolution"),
+            louvain_n_neighbors=louvain_cfg.get("n_neighbors"),
+            louvain_resolution=louvain_cfg.get("resolution"),
+            kmeans_n_clusters=kmeans_cfg.get("n_clusters"),
+            gmm_n_components=gmm_cfg.get("n_components"),
+            gmm_covariance_types=gmm_cfg.get("covariance_type"),
         )
     )
 

@@ -267,6 +267,13 @@ def run_clustering_search(
     embeddings,
     random_state=42,
     scale_embeddings=True,
+    leiden_n_neighbors=None,
+    leiden_resolution=None,
+    louvain_n_neighbors=None,
+    louvain_resolution=None,
+    kmeans_n_clusters=None,
+    gmm_n_components=None,
+    gmm_covariance_types=None,
 ):
     """
     Run all clustering methods and return all results
@@ -303,8 +310,8 @@ def run_clustering_search(
     all_results.extend(
         run_leiden_search(
             embeddings=clustering_embeddings,
-            n_neighbors_values=[15, 30, 50],
-            resolution_values=[0.2, 0.5, 0.8, 1.0],
+            n_neighbors_values=leiden_n_neighbors or [15, 30, 50],
+            resolution_values=leiden_resolution or [0.2, 0.5, 0.8, 1.0],
             random_state=random_state,
         )
     )
@@ -313,8 +320,8 @@ def run_clustering_search(
     all_results.extend(
         run_louvain_search(
             embeddings=clustering_embeddings,
-            n_neighbors_values=[15, 30, 50],
-            resolution_values=[0.2, 0.5, 0.8, 1.0],
+            n_neighbors_values=louvain_n_neighbors or [15, 30, 50],
+            resolution_values=louvain_resolution or [0.2, 0.5, 0.8, 1.0],
             random_state=random_state,
         )
     )
@@ -323,7 +330,7 @@ def run_clustering_search(
     all_results.extend(
         run_kmeans_search(
             embeddings=clustering_embeddings,
-            n_clusters_values=[3, 5, 8, 10, 15],
+            n_clusters_values=kmeans_n_clusters or [3, 5, 8, 10, 15],
             random_state=random_state,
         )
     )
@@ -332,8 +339,8 @@ def run_clustering_search(
     all_results.extend(
         run_gmm_search(
             embeddings=clustering_embeddings,
-            n_components_values=[3, 5, 8, 10, 15],
-            covariance_types=["full", "diag"],
+            n_components_values=gmm_n_components or [3, 5, 8, 10, 15],
+            covariance_types=gmm_covariance_types or ["full", "diag"],
             random_state=random_state,
         )
     )
