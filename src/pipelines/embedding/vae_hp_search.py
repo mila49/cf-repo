@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader, random_split
 
 from src.pipelines.clustering.clustering_search import run_clustering_search
 
-from src.pipelines.embedding.dae import DAEPipeline
+from src.pipelines.embedding.vae import VAEPipeline
 
 
 sweep_config = {
@@ -21,13 +21,13 @@ sweep_config = {
     },
     "parameters": {
         "output_obsm_key": {
-            "values": ["X_dae"],
+            "values": ["X_vae"],
         },
         "output_adata_path": {
-            "values": ["adata_dae.h5ad"],
+            "values": ["adata_vae.h5ad"],
         },
         "output_model_path": {
-            "values": ["dae_model.pt"],
+            "values": ["vae_model.pt"],
         },
         "data_path": {
             "values": ["Dataset/raw/matrix.mtx"],
@@ -48,13 +48,10 @@ sweep_config = {
         "learning_rate": {
             "values": [1e-4, 1e-3],
         },
-        "dropout_rate": {
-            "values": [0.1, 0.2, 0.3],
-        },
 
-        # DAE-specific
-        "mask_rate": {
-            "values": [0.1, 0.3, 0.5],
+        # VAE-specific
+        "kl_weight": {
+            "values": [0.0001, 0.001, 0.01],
         },
     },
 }
@@ -73,8 +70,8 @@ def sweep_worker():
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
-    pipeline = DAEPipeline(
-        config_path="embeddings/dae_embedding.yml"
+    pipeline = VAEPipeline(
+        config_path="embeddings/vae_embedding.yml"
     )
 
     pipeline.config.update(dict(wandb.config))
@@ -204,7 +201,7 @@ def sweep_worker():
 
     if best_model_state is None:
         raise RuntimeError(
-            "No valid DAE model state was saved during training."
+            "No valid VAE model state was saved during training."
         )
 
     pipeline.model.load_state_dict(best_model_state)
@@ -322,12 +319,12 @@ def sweep_worker():
 
     wandb.log(metrics_to_log)
 
-    print("\nFinal DAE Metrics:")
+    print("\nFinal VAE Metrics:")
     print(f"  Train MSE: {best_train_mse:.4f}")
     print(f"  Best Val MSE: {best_val_mse:.4f}")
     print(f"  Best Epoch: {best_epoch}")
 
-    print("\nBest clustering for this DAE configuration:")
+    print("\nBest clustering for this VAE configuration:")
     print(f"  Method: {best_clustering['method']}")
     print(
         f"  Silhouette: "
@@ -409,7 +406,7 @@ if __name__ == "__main__":
         f"{best_run.summary.get('silhouette_latent', np.nan):.5f}"
     )
 
-    print("\nDAE Metrics:")
+    print("\nVAE Metrics:")
     print(
         "  Validation MSE: "
         f"{best_run.summary.get('val_mse', np.nan):.5f}"
@@ -437,7 +434,7 @@ if __name__ == "__main__":
         f"{best_run.summary.get('n_clusters', 0)}"
     )
 
-    print("\nBest DAE hyperparameters:")
+    print("\nBest VAE hyperparameters:")
 
     for parameter, value in best_run.config.items():
         print(f"  {parameter}: {value}")

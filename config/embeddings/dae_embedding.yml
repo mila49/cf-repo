@@ -1,15 +1,115 @@
+wb_sweep: true
+sweep_method: grid
+
 data_path: "Dataset/raw/matrix.mtx"
 
-n_top_genes: 5000
-batch_size: 64
-latent_dim: 30
-epochs: 40
-learning_rate: 0.001
-dropout_rate: 0.2
-mask_rate: 0.3
+parameters:
+
+  # Preprocessing
+  n_top_genes:
+    - 5000
+    - 7000
+
+  # Autoencoder
+  batch_size:
+    - 32
+    - 64
+    - 128
+
+  latent_dim:
+    - 8
+    - 16
+    - 32
+    - 64
+    - 100
+
+  learning_rate:
+    - 0.0001
+    - 0.001
+
+  dropout_rate:
+    - 0.1
+    - 0.2
+    - 0.3
+
+  # DAE-specific
+  mask_rate:
+    - 0.1
+    - 0.3
+    - 0.5
+
+training:
+  max_epochs: 100
+
+  early_stopping:
+    enabled: true
+    monitor: "val_mse"
+    mode: "min"
+    patience: 10
+    min_delta: 0.0001
+
+clustering_search:
+  methods:
+    - leiden
+    - louvain
+    - kmeans
+    - gaussian_mixture
+
+  leiden:
+    n_neighbors:
+      - 15
+      - 30
+      - 50
+    resolution:
+      - 0.2
+      - 0.5
+      - 0.8
+      - 1.0
+
+  louvain:
+    n_neighbors:
+      - 15
+      - 30
+      - 50
+    resolution:
+      - 0.2
+      - 0.5
+      - 0.8
+      - 1.0
+
+  kmeans:
+    n_clusters:
+      - 3
+      - 5
+      - 8
+      - 10
+      - 15
+
+  gaussian_mixture:
+    n_components:
+      - 3
+      - 5
+      - 8
+      - 10
+      - 15
+    covariance_type:
+      - full
+      - diag
+
+evaluation:
+  reconstruction_metrics:
+    - train_mse
+    - val_mse
+
+  clustering_metrics:
+    - silhouette_score
+    - calinski_harabasz_score
+    - davies_bouldin_score
+    - n_clusters
 
 output_obsm_key: "X_dae"
 output_adata_path: "adata_dae.h5ad"
+output_clustered_adata_path: "adata_dae_clustered.h5ad"
 output_model_path: "dae_model.pt"
 
-device: "cpu"
+device: "cuda"
