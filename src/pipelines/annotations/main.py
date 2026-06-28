@@ -1,6 +1,14 @@
+import argparse
 from src.pipelines.annotation.score_cell_types import run_scoring
 
-if __name__ == "__main__":
-    run_scoring(
-        config_path="config/annotation/cell_type_scoring.yml"
-    )
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument(
+    "--config",
+    required=True,
+)
+
+args = parser.parse_args()
+
+run_scoring(args.config)

@@ -1,24 +1,16 @@
-# AnnData containing the final clusters
-adata_path: "adata_vae_clustered.h5ad"
+adata_path: "./adata_ae_clustered.h5ad"
 
+signatures_path: "./signature_genes_major_types.csv"
+signature_column: "major_type"
+annotation_level: "major"
 
-supplementary_table_path: "./Supplementary_Table_2.xlsx"
+cluster_key: "AE embeddings clustering"
 
-# Comprobar cuál es el nombre correcto
-cluster_key: "leiden"
-
-# Use adata.raw for scoring.
-# This should contain normalized gene expression.
-use_raw: true
-
-# Mirar esto bien!!!!
-minimum_genes: 5
-
-# Reproducibility
+use_raw: false
+minimum_genes: 3
 random_state: 42
 
-# Outputs
-output_adata_path: "results/annotation/adata_ae_annotated.h5ad"
-output_cluster_scores_path: "results/annotation/ae_cluster_scores.csv"
-output_assignments_path: "results/annotation/ae_cluster_assignments.csv"
-output_signature_coverage_path: "results/annotation/ae_signature_coverage.csv"
+output_adata_path: "./results/annotation/adata_vae_major_annotated.h5ad"
+output_cluster_scores_path: "./results/annotation/major_cluster_scores.csv"
+output_assignments_path: "./results/annotation/major_cluster_assignments.csv"
+output_signature_coverage_path: "./results/annotation/major_signature_coverage.csv"
