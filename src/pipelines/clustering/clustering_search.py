@@ -7,6 +7,39 @@ from sklearn.mixture import GaussianMixture
 from sklearn.preprocessing import StandardScaler
 
 
+def _rank01(values, higher_is_better=True):
+    values = np.array(values, dtype=float)
+    n = len(values)
+    if n == 1:
+        return np.array([1.0])
+    ranks = np.argsort(np.argsort(values)).astype(float) / (n - 1)
+    if not higher_is_better:
+        ranks = 1.0 - ranks
+    return ranks
+
+
+def _cluster_resolution_score(k, min_reasonable=7, max_reasonable=30, low_tau=1.0, high_tau=10.0):
+    if k < min_reasonable:
+        return float(np.exp(-(min_reasonable - k) / low_tau))
+    if k > max_reasonable:
+        return float(np.exp(-(k - max_reasonable) / high_tau))
+    return 1.0
+
+
+def _cluster_balance_score(n_clusters, min_cluster_size, max_cluster_size, total_cells):
+    min_fraction = min_cluster_size / total_cells
+    max_fraction = max_cluster_size / total_cells
+    dominance_score = 1 - max_fraction
+    small_cluster_score = min(1.0, min_fraction / 0.01)
+    size_ratio = max_cluster_size / max(min_cluster_size, 1)
+    ratio_score = 1 / (1 + np.log(size_ratio))
+    return float(
+        0.40 * dominance_score
+        + 0.30 * small_cluster_score
+        + 0.30 * ratio_score
+    )
+
+
 def compute_clustering_metrics(embeddings, labels):
     """
     Compute internal clustering metrics.
@@ -356,9 +389,41 @@ def run_clustering_search(
             "No valid clustering configuration was produced."
         )
 
+    total_cells = embeddings.shape[0]
+
+    sil_norm = _rank01(
+        [r["silhouette"] for r in valid_results],
+        higher_is_better=True,
+    )
+    db_norm = _rank01(
+        [r["davies_bouldin"] for r in valid_results],
+        higher_is_better=False,
+    )
+    ch_norm = _rank01(
+        np.log1p([r["calinski_harabasz"] for r in valid_results]),
+        higher_is_better=True,
+    )
+
+    for i, result in enumerate(valid_results):
+        base_quality = (
+            0.40 * sil_norm[i]
+            + 0.35 * db_norm[i]
+            + 0.25 * ch_norm[i]
+        )
+        result["composite_score"] = (
+            base_quality
+            * _cluster_resolution_score(result["n_clusters"])
+            * _cluster_balance_score(
+                n_clusters=result["n_clusters"],
+                min_cluster_size=result["min_cluster_size"],
+                max_cluster_size=result["max_cluster_size"],
+                total_cells=total_cells,
+            )
+        )
+
     best_result = max(
         valid_results,
-        key=lambda result: result["silhouette"],
+        key=lambda result: result["composite_score"],
     )
 
     return all_results, best_result
