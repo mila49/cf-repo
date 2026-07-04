@@ -145,7 +145,7 @@ class ClusterComparison:
         Returns:
             Formatted title string.
         """
-        embedding_config = self._load_config("config/ae_embedding.yml")
+        embedding_config = self._load_config("config/embeddings/ae_embedding.yml")
         n_top_genes = embedding_config.get("n_top_genes")
         resolution = self.config.get("resolution")
         ari = metrics["ARI"]
@@ -154,22 +154,77 @@ class ClusterComparison:
         return f"n_top_genes={n_top_genes} | res={resolution}\nARI={ari:.4f} | NMI={nmi:.4f}"
 
 
-    def plot_comparison(self, show: bool = True) -> None:
+    def plot_comparison(self, show: bool = True, reference_labels: list = None) -> None:
         """
         Create visual comparison of clusters using UMAP.
 
         Args:
             show: Whether to display the plot.
+            reference_labels: List of reference label columns to compare. 
+                            If None, uses self.reference_label only.
         """
-        metrics = self.compute_metrics()
-        title_base = self._get_title_base(metrics)
+        if reference_labels is None:
+            reference_labels = [self.reference_label]
+        
+        # Plot for each reference label
+        for ref_label in reference_labels:
+            if ref_label not in self.adata.obs.columns:
+                print(f"Warning: Reference label '{ref_label}' not found in adata.obs. Skipping.")
+                continue
+            
+            # Compute metrics for this reference label
+            metrics = self._compute_metrics_for_label(ref_label)
+            title_base = self._get_title_base_for_label(metrics, ref_label)
 
-        sc.pl.umap(
-            self.adata,
-            color=[self.leiden_key, self.reference_label],
-            title=[f"AE Leiden — {title_base}", self.reference_label],
-            show=show,
+            sc.pl.umap(
+                self.adata,
+                color=[self.leiden_key, ref_label],
+                title=[f"AE Leiden — {title_base}", ref_label],
+                show=show,
+            )
+    
+    
+    def _compute_metrics_for_label(self, reference_label: str) -> Dict[str, float]:
+        """
+        Compute clustering similarity metrics for a specific reference label.
+
+        Args:
+            reference_label: Name of the reference label column.
+
+        Returns:
+            Dictionary containing ARI and NMI scores.
+        """
+        ari = adjusted_rand_score(
+            self.adata.obs[reference_label],
+            self.adata.obs[self.leiden_key],
         )
+
+        nmi = normalized_mutual_info_score(
+            self.adata.obs[reference_label],
+            self.adata.obs[self.leiden_key],
+        )
+
+        return {"ARI": ari, "NMI": nmi}
+    
+    
+    def _get_title_base_for_label(self, metrics: Dict[str, float], reference_label: str) -> str:
+        """
+        Generate title base string with metrics and parameters for a specific reference label.
+
+        Args:
+            metrics: Dictionary containing ARI and NMI scores.
+            reference_label: Name of the reference label.
+
+        Returns:
+            Formatted title string.
+        """
+        embedding_config = self._load_config("config/embeddings/ae_embedding.yml")
+        n_top_genes = embedding_config.get("n_top_genes")
+        resolution = self.config.get("resolution")
+        ari = metrics["ARI"]
+        nmi = metrics["NMI"]
+
+        return f"n_top_genes={n_top_genes} | res={resolution}\n{reference_label}: ARI={ari:.4f} | NMI={nmi:.4f}"
 
 
     def compare(self) -> Dict:
@@ -189,6 +244,21 @@ class ClusterComparison:
             "metrics": self.compute_metrics(),
         }
 
-        self.plot_comparison()
+        # Compute and print metrics for both major and minor
+        print("\n" + "="*80)
+        print("CLUSTERING METRICS FOR ALL REFERENCE LABELS")
+        print("="*80)
+        
+        for ref_label in ["major", "minor"]:
+            if ref_label in self.adata.obs.columns:
+                metrics = self._compute_metrics_for_label(ref_label)
+                print(f"\n{ref_label.upper()} annotation:")
+                print(f"  ARI: {metrics['ARI']:.4f}")
+                print(f"  NMI: {metrics['NMI']:.4f}")
+        
+        print("\n" + "="*80)
+        
+        # Plot comparisons for both major and minor reference labels
+        self.plot_comparison(reference_labels=["major", "minor"])
 
         return results
