@@ -18,5 +18,8 @@ class SparseAnnDataset(Dataset):
         return self.X.shape[0]
 
     def __getitem__(self, idx):
+        # Convert idx to int to handle numpy/tensor indices
+        if isinstance(idx, (np.ndarray, torch.Tensor)):
+            idx = int(idx.item()) if hasattr(idx, 'item') else int(idx)
         row = self.X[idx].toarray().squeeze().astype(np.float32)
         return torch.from_numpy(row)
