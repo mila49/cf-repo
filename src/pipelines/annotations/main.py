@@ -1,5 +1,5 @@
 import argparse
-from src.pipelines.annotation.score_cell_types import run_scoring
+from src.pipelines.annotations.score_cell_types import run_scoring
 
 
 parser = argparse.ArgumentParser()
