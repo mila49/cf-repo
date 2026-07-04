@@ -3,5 +3,5 @@ output_adata_path: adata_ae_leiden.h5ad
 
 embedding_key: X_ae
 leiden_key: leiden_clusters
-n_neighbors: 400
-resolution: 0.5
+n_neighbors: 200
+resolution: 0.1

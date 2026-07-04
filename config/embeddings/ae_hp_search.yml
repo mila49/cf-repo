@@ -1,0 +1,72 @@
+# ============================================================
+# Joint Bayesian search: AE + GAT + Leiden + signature scoring
+# ============================================================
+
+# Bayesian search samples this large space without evaluating every
+# possible combination. Increase count later if the first search is stable.
+sweep:
+  method: bayes
+  count: 150
+  objective: composite_score
+
+seed: 42
+validation_fraction: 0.20
+scale_embeddings: true
+use_gat_refinement: true
+
+training:
+  max_epochs: 80
+  patience: 10
+  min_delta: 1.0e-4
+
+# Limit the quadratic cost of the silhouette calculation.
+metrics:
+  silhouette_sample_size: 10000
+  compute_expensive_diagnostics: false
+
+
+cluster_constraints:
+  min_clusters: 4
+  max_clusters: 35
+  min_cluster_size: 10
+
+signature_scoring:
+  enabled: true
+  signatures_path: "signature_genes_major_types.csv"
+  signature_column: "major_type"
+  minimum_genes: 3
+  ctrl_size: 50
+  n_bins: 25
+
+  # Recommended: point this to a log-normalised h5ad containing all genes
+  # and the same cells/obs_names as the AE input. This makes signature
+  # scoring independent of n_top_genes. Leave null to use adata.raw, or
+  # pipeline.adata when raw is unavailable.
+  expression_adata_path: null
+
+# Fixed GAT values that are not sampled.
+gat_defaults:
+  gat_out_dim: null
+  gat_weight_decay: 0.0
+
+# W&B accepts categorical values in a Bayesian sweep. Only 150 runs are
+# executed, not the full Cartesian product of this search space.
+search_space:
+  # AE
+  n_top_genes:      [5000, 7000, 9000]
+  learning_rate:    [1.0e-5, 3.0e-5, 6.0e-5]
+  latent_dim:       [16, 32, 64]
+  batch_size:       [64, 128]
+  dropout_rate:     [0.1, 0.2, 0.3]
+
+  # GAT
+  gat_hidden_dim:    [16, 32, 64]
+  gat_heads:         [2, 4, 8]
+  gat_learning_rate: [5.0e-4, 1.0e-3]
+  gat_dropout:       [0.1, 0.2, 0.3]
+  gat_epochs:        [10, 20, 40]
+  knn_k:             [5, 15, 30]
+
+  # Leiden
+  leiden_resolution: [0.10, 0.20, 0.35, 0.50, 0.75, 1.00, 1.50]
+  n_neighbors:       [30, 50, 100, 200]
