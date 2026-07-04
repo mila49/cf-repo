@@ -1,0 +1,16 @@
+adata_path: "./adata_ae_clustered.h5ad"
+
+signatures_path: "./signature_genes_major_types.csv"
+signature_column: "major_type"
+annotation_level: "major"
+
+cluster_key: "AE embeddings clustering"
+
+use_raw: false
+minimum_genes: 3
+random_state: 42
+
+output_adata_path: "./results/annotation/adata_vae_major_annotated.h5ad"
+output_cluster_scores_path: "./results/annotation/major_cluster_scores.csv"
+output_assignments_path: "./results/annotation/major_cluster_assignments.csv"
+output_signature_coverage_path: "./results/annotation/major_signature_coverage.csv"

@@ -16,3 +16,4 @@ torch >= 2.0.1
 wandb >= 0.16.0
 
 pyYAML >= 6.0.2
+openpyxl
