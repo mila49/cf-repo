@@ -1,8 +1,8 @@
 # CF-Repo: Single-Cell RNA-seq Analysis Pipeline
 
-A complete pipeline for single-cell RNA sequencing (scRNA-seq) analysis using deep learning models (Autoencoder, Variational Autoencoder, Denoising Autoencoder) for dimensionality reduction and clustering.
-
 ## 📋 Table of Contents
+- [Introduction](#introduction)
+- [Objectives](#objectives)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Data Setup](#data-setup)
@@ -13,9 +13,21 @@ A complete pipeline for single-cell RNA sequencing (scRNA-seq) analysis using de
   - [Running Specific Models](#running-specific-models)
 - [Project Structure](#project-structure)
 - [Outputs](#outputs)
-- [Troubleshooting](#troubleshooting)
 
 ---
+
+## Introduction
+
+Cystic fibrosis (CF) is a lethal genetic disease that affects the respiratory system and causes progressive damage to the airway epithelium. This pathology alters both the relative abundance of epithelial cell populations and their gene expression profiles.
+
+The study by Carraro et al. primarily aimed to identify the epithelial cell types and subtypes present in the airways to determine how their composition and transcriptional states vary between cystic fibrosis donors and control donors. To carry out this analysis, the authors followed a classic single-cell RNA sequencing (single-cell RNA-seq) analysis workflow.
+
+The main objective of this project is to evaluate the feasibility of implementing the core pipeline of this analysis using advanced Deep Learning techniques, exploring whether these tools can optimize or provide new perspectives to the traditional methodology used in the reference study.
+
+## Objectives
+
+This project focuses on reproducing and enhancing the cell-clustering results of the reference study through advanced Deep Learning approaches. To achieve this, the workflow will shift from traditional methods by utilizing a larger number of genes instead of restricting the analysis solely to highly variable genes. While maintaining a strictly unsupervised clustering framework, the project aims to improve the separation of finer, more nuanced cell subpopulations and significantly increase the biological interpretability of the resulting clusters.
+
 
 ## Prerequisites
 
@@ -258,6 +270,42 @@ python -m src.clustering.leiden
 
 ---
 
+## Experiments
+
+This section summarizes the main experimental workflows implemented under [src/pipelines](src/pipelines). Each experiment is designed to test a specific hypothesis about representation learning, graph refinement, or clustering quality for single-cell data.
+
+### Autoencoder embedding experiment
+A standard autoencoder is used to compress high-dimensional gene-expression data into a compact latent space while preserving the essential structure of the input. The workflow in [src/pipelines/embedding/ae.py](src/pipelines/embedding/ae.py) trains the model on the preprocessed AnnData object, minimizes reconstruction error with Adam, and stores the resulting embedding for downstream clustering.
+
+### Variational autoencoder experiment
+This experiment evaluates whether a variational autoencoder can produce a more regularized and structured latent space by encouraging the embeddings to follow a Gaussian prior. In [src/pipelines/embedding/vae.py](src/pipelines/embedding/vae.py), the model is trained with a reconstruction loss plus KL regularization, and the posterior mean is used as the embedding representation.
+
+### Denoising autoencoder experiment
+The denoising autoencoder experiment tests whether forcing the model to reconstruct corrupted inputs helps it learn more robust features from noisy single-cell data. The workflow in [src/pipelines/embedding/dae.py](src/pipelines/embedding/dae.py) applies masked inputs during training, optimizes reconstruction error, and extracts latent embeddings from the encoder.
+
+### Graph refinement experiment
+This experiment investigates whether refining the initial embeddings with a graph-based neural model can improve local neighborhood structure and make the latent space more suitable for clustering. In [src/pipelines/embedding/graph_refinement.py](src/pipelines/embedding/graph_refinement.py), a k-nearest-neighbor graph is built from the initial embeddings and a graph attention refiner is trained to produce improved representations.
+
+### Autoencoder hyperparameter search
+This experiment explores how sensitive the autoencoder is to key hyperparameters such as latent dimension, learning rate, batch size, and dropout. The sweep in [src/pipelines/embedding/ae_hp_search.py](src/pipelines/embedding/ae_hp_search.py) evaluates multiple configurations, trains each model with early stopping, and logs the results for comparison.
+
+### Variational autoencoder hyperparameter search
+This search examines how the balance between reconstruction quality and KL regularization affects the quality of the learned representations. The workflow in [src/pipelines/embedding/vae_hp_search.py](src/pipelines/embedding/vae_hp_search.py) evaluates different VAE configurations and tracks validation loss together with clustering-related metrics.
+
+### Denoising autoencoder hyperparameter search
+This experiment studies how denoising strength and optimization choices influence the generalization ability of the denoising autoencoder on noisy gene-expression data. The sweep in [src/pipelines/embedding/dae_hp_search.py](src/pipelines/embedding/dae_hp_search.py) searches over multiple parameter settings and assesses the latent representations they produce.
+
+### Clustering search experiment
+This experiment evaluates whether different graph construction settings and clustering resolutions lead to more meaningful and stable partitions of the data. The workflow in [src/pipelines/clustering/clustering_search.py](src/pipelines/clustering/clustering_search.py) compares multiple Leiden and Louvain parameter combinations over the learned embeddings and reports clustering metrics.
+
+### Leiden clustering experiment
+This experiment tests whether Leiden clustering can recover meaningful cell communities from the learned embedding space when the neighborhood graph and resolution are properly tuned. The pipeline in [src/pipelines/clustering/leiden.py](src/pipelines/clustering/leiden.py) runs Leiden clustering and produces cluster assignments for downstream interpretation.
+
+### Annotation and signature scoring experiment
+This experiment assesses whether biological signatures can serve as an external validation signal for the learned embeddings and clusters. The workflow in [src/pipelines/annotations/score_cell_types.py](src/pipelines/annotations/score_cell_types.py) loads signature definitions, scores cells against them, and compares the resulting biological signal with the clustering output.
+
+---
+
 ## Project Structure
 
 ```
@@ -324,65 +372,6 @@ View your experiments at: `https://wandb.ai/<entity>/<project>`
 - Loss curves over epochs
 - Hyperparameter comparisons
 - Best model configurations
-
----
-
-## Troubleshooting
-
-### Issue: Virtual environment won't activate
-**Solution (PowerShell):**
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-.\.venv\Scripts\Activate.ps1
-```
-
-### Issue: `ModuleNotFoundError`
-**Solution:**
-```powershell
-# Ensure virtual environment is activated
-.\.venv\Scripts\Activate.ps1
-
-# Reinstall dependencies
-pip install -r requirements.txt
-```
-
-### Issue: `FileNotFoundError: matrix.mtx`
-**Solution:**
-- Ensure `matrix.mtx`, `genes.csv`, and `metadata.csv` are in the root directory
-- Or update `data_path` in your config file:
-```yaml
-data_path: "path/to/your/matrix.mtx"
-```
-
-### Issue: CUDA out of memory
-**Solution:**
-- Reduce batch size in config:
-```yaml
-parameters:
-  batch_size: [32]  # Instead of 64
-```
-- Or use CPU:
-```yaml
-device: "cpu"
-```
-
-### Issue: Weights & Biases authentication error
-**Solution:**
-```powershell
-# Login to wandb
-wandb login
-
-# Or set API key directly
-$env:WANDB_API_KEY="your-api-key"
-```
-
-### Issue: Import errors when running `python -m src.main`
-**Solution:**
-```powershell
-# Run from the repository root directory
-cd cf-repo
-python -m src.main
-```
 
 ---
 
