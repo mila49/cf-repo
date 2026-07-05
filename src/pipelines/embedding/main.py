@@ -33,11 +33,21 @@ class EmbeddingPipeline(Pipeline):
         """
         Setup the data for training.
         """
-        self.adata = load_data(self.root_dir / self.config["data_path"])
+        raw = load_data(self.root_dir / self.config["data_path"])
 
         self.adata = preprocess_data(
-            self.adata,
+            raw,
             n_top_genes=self.config["n_top_genes"],
+            subset_hvg=True,
+        )
+
+        # Full-gene normalised object kept for signature scoring.
+        # Uses all genes after QC filtering and log-normalisation,
+        # without restricting to the top-N HVGs used for training.
+        self.adata_full = preprocess_data(
+            raw,
+            n_top_genes=self.config["n_top_genes"],
+            subset_hvg=False,
         )
 
         self.dataset = SparseAnnDataset(self.adata.X)
@@ -198,6 +208,30 @@ class EmbeddingPipeline(Pipeline):
         print("Saved:")
         print(self.config["output_adata_path"])
         print(self.config["output_model_path"])
+
+        # Save full-gene object for signature scoring (all genes, not just HVGs).
+        full_adata_path = self.config.get("output_full_adata_path")
+        if full_adata_path and hasattr(self, "adata_full") and self.adata_full is not None:
+            # Copy embeddings and cluster obs from the HVG adata into the full object.
+            for key in self.adata.obsm:
+                self.adata_full.obsm[key] = self.adata.obsm[key]
+            for col in self.adata.obs.columns:
+                if col not in self.adata_full.obs.columns:
+                    self.adata_full.obs[col] = self.adata.obs[col].values
+            # Apply the same Arrow-safe string conversions.
+            self.adata_full.obs.index = pd.Index(
+                np.array([str(x) for x in self.adata_full.obs.index], dtype=object)
+            )
+            self.adata_full.var.index = pd.Index(
+                np.array([str(x) for x in self.adata_full.var.index], dtype=object)
+            )
+            for col in self.adata_full.obs.columns:
+                if pd.api.types.is_string_dtype(self.adata_full.obs[col]):
+                    self.adata_full.obs[col] = np.array(
+                        self.adata_full.obs[col].astype(str).tolist(), dtype=object
+                    )
+            self.adata_full.write(full_adata_path)
+            print(full_adata_path)
 
 
     def run(self):
