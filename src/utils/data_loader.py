@@ -41,6 +41,7 @@ def preprocess_data(
     hvg_flavor: str = "seurat",
     batch_key: str | None = None,
     copy: bool = True,
+    subset_hvg: bool = True,
 ) -> ad.AnnData:
     """
     Preprocess scRNA-seq data for clustering / representation learning.
@@ -131,8 +132,9 @@ def preprocess_data(
             batch_key=batch_key,
         )
 
-    # Subset to HVGs
-    adata = adata[:, adata.var["highly_variable"]].copy()
+    # Subset to HVGs (skip when caller wants the full-gene object)
+    if subset_hvg:
+        adata = adata[:, adata.var["highly_variable"]].copy()
 
     # Keep matrix sparse and memory efficient
     if sparse.issparse(adata.X):
