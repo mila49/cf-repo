@@ -86,16 +86,28 @@ def run_scoring(config_path):
     ]:
         path.parent.mkdir(parents=True,exist_ok=True)
 
-    # Load clustered AnnData
+    # Load clustered AnnData (source of cluster labels)
     print(f"Loading AnnData: {adata_path}")
+    adata_clustered = sc.read_h5ad(adata_path)
 
-    adata = sc.read_h5ad(adata_path)
-
-    if cluster_key not in adata.obs.columns:
+    if cluster_key not in adata_clustered.obs.columns:
         raise KeyError(
             f"Cluster column '{cluster_key}' not found. "
-            f"Available columns: {adata.obs.columns.tolist()}"
+            f"Available columns: {adata_clustered.obs.columns.tolist()}"
         )
+
+    # Optionally load a full-gene adata for richer signature scoring.
+    # The clustered adata (above) only has HVG genes; the full-gene adata
+    # has all post-QC genes but was saved before clustering, so it lacks
+    # the cluster column.  We transfer the cluster labels here.
+    full_gene_adata_path = config.get("full_gene_adata_path")
+    if full_gene_adata_path:
+        print(f"Loading full-gene AnnData for scoring: {full_gene_adata_path}")
+        adata = sc.read_h5ad(full_gene_adata_path)
+        # Transfer cluster labels (obs index must be aligned — same cells, same order)
+        adata.obs[cluster_key] = adata_clustered.obs[cluster_key].values
+    else:
+        adata = adata_clustered
 
     # Load signatures
     signatures = load_signatures(signatures_path,signature_column)
