@@ -1,4 +1,4 @@
-adata_path: "./adata_ae_clustered.h5ad"
+adata_path: "./adata_ae_full_genes.h5ad"
 
 signatures_path: "./signature_genes_major_types.csv"
 signature_column: "major_type"
