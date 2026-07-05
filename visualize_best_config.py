@@ -30,22 +30,51 @@ from src.interpretability import (
 from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
 
-# Best configuration from DAE hyperparameter search (user-specified)
-BEST_CONFIG = {
-    "learning_rate": 0.005,
-    "n_top_genes": 5000,
-    "epochs": 10,
-    "batch_size": 64,
-    "latent_dim": 32,
-    "dropout_rate": 0.20,
-    "mask_rate": 0.05,
-    "gat_heads": 4,
-    "gat_learning_rate": 0.01,
-    "gat_dropout": 0.20,
-    "gat_epochs": 20,
-    "knn_k": 50,
-    "gat_hidden_dim": 32,
-}
+# Best DAE configuration selected by the W&B sweep.
+BEST_CONFIG_PATH = (
+    project_root
+    / "outputs"
+    / "dae_sweep"
+    / "best_dae_leiden_config.yml"
+)
+BEST_SUMMARY_PATH = (
+    project_root
+    / "outputs"
+    / "dae_sweep"
+    / "best_dae_leiden_summary.yml"
+)
+
+OUTPUT_DIR = project_root / "outputs" / "dae_final"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def load_yaml(path: Path) -> dict:
+    """Load a YAML file and return its contents."""
+    if not path.exists():
+        raise FileNotFoundError(f"Required YAML file not found: {path}")
+
+    with open(path, "r", encoding="utf-8") as file:
+        data = yaml.safe_load(file)
+
+    if not isinstance(data, dict):
+        raise ValueError(f"Expected a dictionary in YAML file: {path}")
+
+    return data
+
+
+BEST_CONFIG = load_yaml(BEST_CONFIG_PATH)
+BEST_SUMMARY = load_yaml(BEST_SUMMARY_PATH)
+
+# The selected stopping epoch is stored in the summary YAML.
+BEST_CONFIG["epochs"] = int(
+    BEST_SUMMARY.get(
+        "best_epoch",
+        BEST_CONFIG.get("epochs", 20),
+    )
+)
+
+# Reuse DAE embeddings when the DAE configuration is unchanged.
+REUSE_DAE_CACHE = True
 
 # Visualization settings
 APPLY_GAT_REFINEMENT = False   # refine DAE embeddings with GAT before clustering (z0 → z1)
@@ -55,7 +84,7 @@ MIN_DIST_UMAP = 0.1
 
 # Signature scoring settings
 RUN_SIGNATURE_SCORING = True
-SIGNATURES_PATH = "signature_genes_major_types.csv"
+SIGNATURES_PATH = project_root / "signature_genes_major_types.csv"
 SIGNATURE_COLUMN = "major_type"   # column in the CSV that contains signature names
 MINIMUM_GENES = 3
 
@@ -66,67 +95,108 @@ INTERPRETABILITY_THRESHOLD = 0.3    # hide edges below this fraction of max atte
 
 
 def train_and_extract_embeddings(config):
-    """Train model and extract embeddings."""
-    print("="*80)
-    print("TRAINING MODEL WITH BEST CONFIGURATION")
-    print("="*80)
+    """Train the DAE or reuse cached embeddings, then return expression objects."""
+    print("=" * 80)
+    print("TRAINING DAE WITH BEST CONFIGURATION")
+    print("=" * 80)
     print(f"Configuration: {config}\n")
-    
-    # Create pipeline
+
     pipeline = DAEPipeline(config_path="embeddings/dae_embedding.yml")
-    
-    # Update config
-    for key, value in config.items():
-        pipeline.config[key] = value
-    
-    # Setup
+    pipeline.config.update(config)
+
+    # Preprocessing is required to recover obs, HVGs and adata.raw.
     pipeline.setup_data()
+
+    cache_tag = (
+        f"genes{int(config['n_top_genes'])}_"
+        f"latent{int(config['latent_dim'])}_"
+        f"epochs{int(config['epochs'])}"
+    )
+    embedding_cache = OUTPUT_DIR / f"dae_embeddings_{cache_tag}.npy"
+    model_cache = OUTPUT_DIR / f"dae_model_{cache_tag}.pt"
+
+    # adata.raw should contain the full log-normalised expression matrix.
+    if pipeline.adata.raw is not None:
+        adata_full = pipeline.adata.raw.to_adata()
+        print(
+            f"Full-gene expression available for signature scoring: "
+            f"{adata_full.n_vars} genes"
+        )
+    else:
+        adata_full = pipeline.adata.copy()
+        print(
+            "Warning: pipeline.adata.raw is None. Signature scoring will only "
+            f"use the {adata_full.n_vars} genes present in pipeline.adata."
+        )
+
+    if REUSE_DAE_CACHE and embedding_cache.exists():
+        embeddings = np.load(embedding_cache)
+        expected_shape = (
+            pipeline.adata.n_obs,
+            int(config["latent_dim"]),
+        )
+
+        if embeddings.shape == expected_shape:
+            print(f"Reusing cached DAE embeddings: {embedding_cache}")
+            return embeddings, pipeline.adata, adata_full
+
+        print(
+            "Ignoring incompatible DAE cache: "
+            f"found {embeddings.shape}, expected {expected_shape}."
+        )
+
+    # Create and train the model only when no compatible cache exists.
     pipeline.setup_model()
-    
-    # Training
-    epochs = pipeline.config["epochs"]
-    print(f"Training for {epochs} epochs...")
-    
+
+    epochs = int(config["epochs"])
+    print(f"Training DAE for {epochs} epochs...")
+
     for epoch in range(epochs):
         pipeline.model.train()
-        total_loss = 0
-        
+        total_loss = 0.0
+        processed = 0
+
         for batch_x in pipeline.loader:
             batch_x = batch_x.to(pipeline.device)
             loss = pipeline.compute_loss(batch_x)
-            
-            pipeline.optimizer.zero_grad()
+
+            pipeline.optimizer.zero_grad(set_to_none=True)
             loss.backward()
             pipeline.optimizer.step()
-            
+
             total_loss += loss.item() * batch_x.size(0)
-        
-        avg_mse = total_loss / len(pipeline.dataset)
-        if (epoch + 1) % 1 == 0 or epoch == epochs - 1:
-            print(f"Epoch {epoch + 1:03d}/{epochs} | MSE: {avg_mse:.4f}")
-    
-    # Extract embeddings
+            processed += batch_x.size(0)
+
+        avg_mse = total_loss / max(processed, 1)
+        print(f"Epoch {epoch + 1:03d}/{epochs} | MSE: {avg_mse:.4f}")
+
     print("\nExtracting embeddings...")
     pipeline.model.eval()
     all_embeddings = []
-    
+
     embedding_loader = DataLoader(
         pipeline.dataset,
-        batch_size=pipeline.config["batch_size"],
+        batch_size=int(config["batch_size"]),
         shuffle=False,
         num_workers=0,
     )
-    
+
     with torch.no_grad():
         for batch_x in embedding_loader:
             batch_x = batch_x.to(pipeline.device)
             latent = pipeline.get_latent_representation(batch_x)
             all_embeddings.append(latent.cpu().numpy())
-    
-    embeddings = np.vstack(all_embeddings)
+
+    embeddings = np.vstack(all_embeddings).astype(np.float32)
     print(f"Embeddings shape: {embeddings.shape}")
 
-    return embeddings, pipeline.adata, pipeline.adata_full
+    np.save(embedding_cache, embeddings)
+    torch.save(pipeline.model.state_dict(), model_cache)
+
+    print(f"Saved DAE embeddings: {embedding_cache}")
+    print(f"Saved DAE model: {model_cache}")
+
+    return embeddings, pipeline.adata, adata_full
 
 
 def apply_gat_refinement(embeddings, config):
@@ -233,7 +303,12 @@ def apply_signature_scoring(adata_source, adata_plot, cluster_key='leiden',
     print(f"  Signatures file : {signatures_path}")
     print(f"  Signature column: {signature_column}")
 
-    # Transfer Leiden cluster labels to original adata so score_genes can group by them
+    # Work on a copy. When adata_full is available, X contains the full
+    # log-normalised expression matrix recovered from pipeline.adata.raw.
+    adata_source = adata_source.copy()
+    print(f"  Expression genes available: {adata_source.n_vars}")
+
+    # Transfer Leiden labels so signature scores can be averaged per cluster.
     adata_source.obs[cluster_key] = adata_plot.obs[cluster_key].values
 
     signatures = load_signatures(signatures_path, signature_column)
@@ -623,9 +698,9 @@ def main():
         print(f"  {key}: {value}")
     print()
 
-    # Leiden clustering parameters from best DAE configuration
-    leiden_resolution = 0.1
-    leiden_n_neighbors = 200
+    # Leiden parameters selected by the DAE sweep.
+    leiden_resolution = float(BEST_CONFIG["leiden_resolution"])
+    leiden_n_neighbors = int(BEST_CONFIG["n_neighbors"])
 
     print(f"\nLeiden Clustering Parameters:")
     print(f"  Resolution: {leiden_resolution}")
@@ -637,10 +712,10 @@ def main():
     # Apply GAT refinement to embeddings (z0 → z1) before clustering
     if APPLY_GAT_REFINEMENT:
         embeddings, gat_model_refine, edge_index_refine, z0_refine = apply_gat_refinement(embeddings, BEST_CONFIG)
-        output_prefix = "best_config_dae_gat"
+        output_prefix = str(OUTPUT_DIR / "best_config_dae_gat")
     else:
         gat_model_refine, edge_index_refine, z0_refine = None, None, None
-        output_prefix = "best_config_dae"
+        output_prefix = str(OUTPUT_DIR / "best_config_dae")
 
     # Create UMAP plots (with Leiden clustering + optional signature scoring)
     adata_plot = create_umap_plots(
