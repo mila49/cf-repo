@@ -30,7 +30,14 @@
   - [5.3 Visualization and Reporting](#53-visualization-and-reporting)
 - [6. Configuration Reference](#6-configuration-reference)
 - [7. Outputs](#7-outputs)
-- [8. References](#8-references)
+- [8. Results and Discussion](#8-results-and-discussion)
+  - [8.1 Best Configuration](#81-best-configuration)
+  - [8.2 Quantitative Results](#82-quantitative-results)
+  - [8.3 UMAP Visualisations](#83-umap-visualisations)
+  - [8.4 GAT Attention Interpretability](#84-gat-attention-interpretability)
+  - [8.5 Discussion](#85-discussion)
+  - [8.6 Limitations and Future Work](#86-limitations-and-future-work)
+- [9. References](#9-references)
 
 ---
 
@@ -547,7 +554,106 @@ When configured, Weights & Biases logs training curves, hyperparameter configura
 
 ---
 
-## 8. References
+## 8. Results and Discussion
+
+### 8.1 Best Configuration
+
+The grid search across ~2,000 configurations selected `smooth-sweep-68` as the top-ranking model. The winning setup is a **standard Autoencoder without GAT refinement**, driven by the composite unsupervised score defined in Section 2.7.
+
+| Hyperparameter | Value |
+|---|---|
+| `n_top_genes` | 9,000 |
+| `learning_rate` | 3×10⁻⁵ |
+| `latent_dim` | 64 |
+| `batch_size` | 128 |
+| `dropout_rate` | 0.30 |
+| `epochs` | 10 |
+| `leiden_resolution` | 0.35 |
+| `n_neighbors` (kNN) | 50 |
+| GAT refinement | disabled |
+| **Composite Score** | **0.284** |
+
+### 8.2 Quantitative Results
+
+Metrics computed on the full dataset (40,677 cells) after retraining the best configuration:
+
+| Category | Metric | Value |
+|---|---|---|
+| Cluster geometry | Silhouette | 0.370 |
+| Cluster geometry | Davies-Bouldin | 0.967 |
+| Cluster geometry | Calinski-Harabasz | 94,036 |
+| Graph structure | Edge Purity | 0.951 |
+| Graph structure | Modularity | 0.950 |
+| Graph structure | Conductance | 0.522 |
+| Reference agreement (major) | ARI | 0.293 |
+| Reference agreement (major) | NMI | 0.377 |
+| Reference agreement (minor) | ARI | 0.185 |
+| Reference agreement (minor) | NMI | 0.320 |
+| Structural | N clusters | 7 |
+
+Signature scoring assigned the 9 Leiden clusters produced at inference to the three dominant epithelial lineages (Basal, Secretory, Ciliated), consistent with the reference biology.
+
+### 8.3 UMAP Visualisations
+
+Two 1×3 UMAP panels compare the ground-truth annotations, the unsupervised Leiden clustering, and the marker-gene-based predicted cell types.
+
+**Major cell-type view**
+
+<!-- ![Major UMAP](best_config_ae_umap_major.png) -->
+
+> _Placeholder — insert `best_config_ae_umap_major.png` here._
+
+**Minor cell-type view** (opacity encodes subtype rank within each major lineage)
+
+<!-- ![Minor UMAP](best_config_ae_umap_minor.png) -->
+
+> _Placeholder — insert `best_config_ae_umap_minor.png` here._
+
+### 8.4 GAT Attention Interpretability
+
+Although the winning configuration does **not** use GAT for embedding refinement, a GAT is trained *post-hoc* on the AE embeddings **solely to extract inter-cluster attention weights**. This provides an interpretable view of which cell-type communities exchange information under a neighbourhood-aware model, without altering the clustering itself.
+
+**Cluster attention heatmap** (rows = source cluster, columns = destination cluster; diagonal = within-cluster cohesion)
+
+<!-- ![Attention Heatmap](best_config_ae_attention_heatmap.png) -->
+
+> _Placeholder — insert `best_config_ae_attention_heatmap.png` here._
+
+**Attention graph** (edges below 30% of max attention are hidden for readability)
+
+<!-- ![Attention Graph](best_config_ae_attention_graph.png) -->
+
+> _Placeholder — insert `best_config_ae_attention_graph.png` here._
+
+The attention diagonal quantifies within-cluster cohesion, while off-diagonal weights highlight cross-lineage message passing (e.g. Basal ↔ Secretory transitions). This offers a biologically motivated interpretation of cell-type similarity that would otherwise be hidden behind categorical cluster IDs.
+
+### 8.5 Discussion
+
+**Standard AE outperforms GAT-refined variants.** GAT refinement propagates information across kNN neighbours, which risks *over-smoothing*: cells belonging to distinct but adjacent clusters converge in embedding space, degrading separability. With a sufficiently large latent dimension (`latent_dim=64`) and broad input (`n_top_genes=9000`), the encoder already captures the dominant biological variance, so additional graph smoothing provides no measurable benefit on the unsupervised composite score.
+
+**A broader gene set is preferred over strict HVG selection.** The traditional workflow keeps 2,000–3,000 highly variable genes, whereas the winning configuration uses 9,000. This suggests the AE can effectively down-weight noisy genes during encoding, while retaining low-variance but biologically meaningful markers (e.g. rare Ionocyte or Neuroendocrine signatures) that HVG filtering would discard.
+
+**Strong cluster geometry, moderate biological agreement.** Edge purity (0.951) and modularity (0.950) indicate that the learned embedding produces tight, well-separated graph communities. However, ARI vs. the major reference labels sits at 0.293. This gap is expected: unsupervised Leiden optimises graph community structure, not correspondence to a predefined ontology. The 7 discovered clusters partially split or merge relative to the 6 reference major types, but signature scoring recovers the correct dominant lineage per cluster.
+
+**Minor subtype resolution remains challenging (ARI = 0.185).** Within-lineage subtypes (e.g. Secretory→Club/Goblet) share highly similar transcriptomic profiles. The model captures major lineages robustly but struggles to resolve fine subpopulations — a limitation shared with the original PCA-based pipeline and inherent to fully unsupervised approaches on this dataset.
+
+**Interpretability adds value even without refinement.** Decoupling GAT training from the clustering pipeline (interpretability-only mode) preserves the cleanest embeddings for clustering while still exposing a graph-attention view over the final cell-type communities — a useful compromise between predictive quality and biological explainability.
+
+### 8.6 Limitations and Future Work
+
+The current best composite score (0.284) is respectable but leaves clear room for improvement. Several directions would be worth exploring:
+
+- **Broader hyperparameter space.** The grid search covers a limited slice of the parameter space (e.g. `learning_rate ∈ {5e-6, 1e-5, 2e-5, 3e-5}`, `latent_dim ∈ {12, 24, 32, 64}`). Extending both edges (higher latent dims, wider learning-rate schedules, longer training with early stopping) may uncover configurations that currently sit outside the searched region.
+- **Bayesian / adaptive search.** Replace the exhaustive grid with Bayesian optimisation (Optuna, W&B Sweeps) to explore the space more efficiently and probe non-uniform regions.
+- **Alternative GAT integration strategies.** The current binary choice “refinement on/off” is coarse. Softer combinations — e.g. residual GAT (`z = z_AE + λ · GAT(z_AE)`), or GAT applied only during clustering-graph construction — might harness attention without over-smoothing.
+- **DAE with tuned masking rates.** The DAE variant has more inductive bias against noise; a targeted DAE sweep with fine-grained `mask_rate` control could outperform the plain AE.
+- **Multi-metric selection.** The composite score is a single scalar aggregating three sub-scores. A Pareto-front analysis across silhouette, modularity, and cluster balance could surface configurations that are strong in one axis but discarded by the current weighting.
+- **Subtype-aware objectives.** To improve minor-type ARI, incorporating self-supervised contrastive losses (e.g. per-donor or per-batch positive pairs) could push the encoder toward finer discrimination without leaking reference labels.
+- **Cross-dataset validation.** Retraining on additional airway scRNA-seq cohorts would test the generalisability of the current best configuration beyond the Carraro et al. dataset.
+
+---
+
+## 9. References
 
 1. Carraro, G. et al. (2021). Transcriptional analysis of cystic fibrosis airways at single-cell resolution reveals altered epithelial cell states and composition. *Nature Medicine*, 27, 806–814.
 2. Traag, V. A., Waltman, L., & van Eck, N. J. (2019). From Louvain to Leiden: guaranteeing well-connected communities. *Scientific Reports*, 9, 5233.
