@@ -11,6 +11,7 @@
   - [Basic Training](#basic-training)
   - [Hyperparameter Search](#hyperparameter-search)
   - [Running Specific Models](#running-specific-models)
+- [Results](#results)
 - [Project Structure](#project-structure)
 - [Outputs](#outputs)
 
@@ -303,6 +304,65 @@ This experiment tests whether Leiden clustering can recover meaningful cell comm
 
 ### Annotation and signature scoring experiment
 This experiment assesses whether biological signatures can serve as an external validation signal for the learned embeddings and clusters. The workflow in [src/pipelines/annotations/score_cell_types.py](src/pipelines/annotations/score_cell_types.py) loads signature definitions, scores cells against them, and compares the resulting biological signal with the clustering output.
+
+---
+
+## Results
+
+This section summarizes the outcomes of applying the embedding, clustering, and graph-refinement pipelines above to the reference dataset.
+
+### Metrics
+
+Model configurations were compared using a composite score:
+
+```
+Composite Score = Base Quality × Cluster Resolution × Cluster Balance
+```
+
+which jointly captures three questions: are the clusters well separated, did the model avoid collapsing clusters together, and are the cluster sizes reasonable?
+
+| Composite score | AE | DAE |
+|---|---|---|
+| Without GAT embeddings | **0.28** | 0.17 |
+| With GAT embeddings | 0.26 | 0.22 |
+
+The standard Autoencoder (AE) consistently outperformed the Denoising Autoencoder (DAE) across the explored hyperparameter search space, both with and without graph-based refinement.
+
+Comparing the best configuration against the ground-truth cell-type labels (Adjusted Rand Index and Normalized Mutual Information, both bounded between 0 and 1):
+
+| Best config | ARI | NMI |
+|---|---|---|
+| Major cell types | 0.515 | 0.483 |
+| Minor cell types | 0.331 | 0.419 |
+
+Performance is noticeably stronger at the coarse ("major") cell-type level than at the fine-grained ("minor") subtype level. This is a **clustering granularity** effect: the finer the distinction the model is asked to recover, the harder it becomes to separate biologically similar subtypes within the learned latent space.
+
+The best configuration found during the hyperparameter sweep (`n_top_genes=9000`, `latent_dim=64`, `learning_rate=3e-5`, `batch_size=128`, `dropout_rate=0.3`, `leiden_resolution=0.35`, `n_neighbors=50`) reached the composite score of 0.284 reported above.
+
+### Clustering
+
+At the **major cell-type level**, unsupervised Leiden clustering on the AE embedding produced 11 clusters that closely mirror the true major cell-type structure (Basal, Ciliated, Secretory, etc.), without the model ever seeing the ground-truth labels during training. An independent, label-free biological signature-scoring step — assigning each cell a predicted type based on marker-gene expression — reconstructs a very similar structure, providing external validation that the AE embedding captures real biological signal rather than noise.
+
+At the **minor cell-type level**, Leiden proposes 20 clusters, but both clustering and signature-scoring recover the finer subtypes less cleanly, consistent with the ARI/NMI drop reported above.
+
+### Interpretability
+
+To probe what the model has learned, embeddings were refined with a **Graph Attention Network (GAT)** (see [src/models/gat_refiner.py](src/models/gat_refiner.py) and [src/pipelines/embedding/graph_refinement.py](src/pipelines/embedding/graph_refinement.py)):
+
+- A **k-nearest-neighbor graph is built over cells** (not genes), connecting each cell to its `knn_k` nearest neighbors (default 15) in the AE's latent space.
+- A two-layer GAT is trained **self-supervised**, with no labels involved: its only objective is to reconstruct each cell's own input embedding from its neighbors' features, learning in the process how much attention to assign to each neighboring cell.
+- The resulting per-edge attention weights are averaged by grouping cells according to their cell-type label, producing a cluster-to-cluster attention matrix.
+
+At the **major cell-type level**, attention is fairly uniform (~0.12–0.13) across all cluster pairs, indicating the model treats broad cell types as roughly equally connected. At the **minor subtype level**, attention becomes sparse and selective — several cluster pairs show zero attention, while others (e.g. Ciliated2 → Secretory5, 0.190) stand out clearly — showing the model differentiates biologically meaningful relationships once given fine-enough resolution to work with.
+
+### Conclusions & Future Work
+
+- A simple AE-based unsupervised pipeline is feasible and biologically meaningful, but its performance is limited by representation quality and clustering granularity.
+- The standard AE consistently outperformed the DAE across the explored search space.
+- The pipeline reproduces the reference study's clustering results while making them more interpretable, thanks to a wider gene context and biological signature validation.
+- The GAT attention analysis shows this interpretability gain is resolution-dependent, becoming more selective and biologically specific at finer clustering resolutions.
+
+Future work includes: a broader/higher-resolution hyperparameter search, testing whether larger gene sets continue to help or start adding noise, trying additional clustering algorithms beyond Leiden/Louvain, building a stronger interpretability pipeline grounded more directly in biological marker expression, and extending to a **Variational Autoencoder (VAE)** to impose a more structured latent space — directly addressing the granularity limitation seen at the minor subtype level.
 
 ---
 
