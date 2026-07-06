@@ -502,9 +502,9 @@ Jupyter notebooks in `notebooks/` and `reporting/` provide interactive analysis 
 | `gat_learning_rate` | GAT optimiser learning rate | 0.001 |
 | `device` | Compute device (`cpu` / `cuda`) | cpu |
 
-### Hyperparameter Search Grid (`config/embeddings/ae_hp_search.yml`)
+### Hyperparameter Search
 
-Defines parameter lists for grid search. All combinations are evaluated:
+For the hyperparameter search, it has been implemented using bayesian search in Weights & Biases Sweep option, as well as an offline search. Here we present some examples of the hyperparameter space. 
 
 | Parameter | Search Space |
 |-----------|-------------|
