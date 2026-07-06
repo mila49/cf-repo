@@ -1,109 +1,41 @@
-wb_sweep: true
-sweep_method: grid
+wb_sweep: false
+data_path: "matrix.mtx"
 
-data_path: "Dataset/raw/matrix.mtx"
+# Best hyperparameters from offline search (silhouette: 0.3730)
+# batch_size: 64
+# latent_dim: 32
+# epochs: 5
+# learning_rate: 0.00006
+# dropout_rate: 0.2
 
-parameters:
+batch_size: 32
+latent_dim: 16
+epochs: 5
+learning_rate: 0.00003
+dropout_rate: 0.2
 
-  # Preprocessing
-  n_top_genes:
-    - 5000
-    - 7000
-
-  # Autoencoder
-  batch_size:
-    - 32
-    - 64
-    - 128
-
-  latent_dim:
-    - 8
-    - 16
-    - 32
-    - 64
-    - 100
-
-  learning_rate:
-    - 0.0001
-    - 0.001
-
-  dropout_rate:
-    - 0.1
-    - 0.2
-    - 0.3
-
-training:
-  max_epochs: 100
-
-  early_stopping:
-    enabled: true
-    monitor: "val_mse"
-    mode: "min"
-    patience: 10
-    min_delta: 0.0001
-
-clustering_search:
-  methods:
-    - leiden
-    - louvain
-    - kmeans
-    - gaussian_mixture
-
-  leiden:
-    n_neighbors:
-      - 15
-      - 30
-      - 50
-    resolution:
-      - 0.2
-      - 0.5
-      - 0.8
-      - 1.0
-
-  louvain:
-    n_neighbors:
-      - 15
-      - 30
-      - 50
-    resolution:
-      - 0.2
-      - 0.5
-      - 0.8
-      - 1.0
-
-  kmeans:
-    n_clusters:
-      - 3
-      - 5
-      - 8
-      - 10
-      - 15
-
-  gaussian_mixture:
-    n_components:
-      - 3
-      - 5
-      - 8
-      - 10
-      - 15
-    covariance_type:
-      - full
-      - diag
-
-evaluation:
-  reconstruction_metrics:
-    - train_mse
-    - val_mse
-
-  clustering_metrics:
-    - silhouette_score
-    - calinski_harabasz_score
-    - davies_bouldin_score
-    - n_clusters
-
+n_top_genes: 5000
 output_obsm_key: "X_ae"
 output_adata_path: "adata_ae.h5ad"
+output_full_adata_path: "adata_ae_full_genes.h5ad"
 output_clustered_adata_path: "adata_ae_clustered.h5ad"
 output_model_path: "ae_model.pt"
 
-device: "cuda"
+use_graph_refinement: true
+graph_refinement_model: "gat"
+knn_k: 15
+gat_hidden_dim: 32
+gat_out_dim: 16
+gat_heads: 4
+gat_dropout: 0.2
+gat_epochs: 50
+gat_learning_rate: 0.001
+gat_weight_decay: 0.0
+save_gat_attention_weights: false
+refined_output_obsm_key: "X_ae_gat"
+original_output_obsm_key: "X_ae_z0"
+baseline_leiden_key: "leiden_baseline_z0"
+refined_leiden_key: "leiden_refined_z1"
+gat_model_output_path: "gat_refiner.pt"
+
+device: "cpu"
