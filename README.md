@@ -632,6 +632,12 @@ The attention diagonal quantifies within-cluster cohesion, while off-diagonal we
 
 **Minor subtype resolution remains challenging (ARI = 0.185).** Within-lineage subtypes (e.g. Secretory→Club/Goblet) share highly similar transcriptomic profiles. The model captures major lineages robustly but struggles to resolve fine subpopulations — a limitation shared with the original PCA-based pipeline and inherent to fully unsupervised approaches on this dataset.
 
+**Ground-truth reliability is itself an open question.** The reference `major`/`minor` labels from the Carraro et al. study were themselves derived from an unsupervised PCA + Louvain pipeline followed by expert curation. We do not have full visibility into their inter-annotator agreement, the rules used for boundary cases, or how ambiguous cells were assigned. A low ARI against these labels therefore does not necessarily indicate a poor embedding — it may reflect genuine biological structure that the reference pipeline could not resolve, or a defensible alternative partitioning of the same continuous state space. Reference-based metrics should thus be read as *consistency indicators*, not as absolute correctness measures.
+
+**Signature-based interpretations inherit the same caveat.** The signature gene sets used for cluster annotation are those proposed in the reference paper. They are curated but not exhaustive, may over-represent well-studied lineages (Basal, Secretory, Ciliated) relative to rare types (Ionocyte, NE, FOXN4+), and can miss dataset-specific marker variability. When a cluster's top-scoring signature does not match the reference label, part of the disagreement can come from the incompleteness of these lists rather than from a mis-clustered cell.
+
+**Attention interpretability is informative but weaker than expected.** Ideally the cluster-level attention heatmap would show a strong diagonal — each cluster paying most attention to itself — since intra-cluster cells should be more informative for reconstruction than out-of-cluster ones. In practice the diagonal is only mildly enhanced and off-diagonal weights remain non-trivial. Two effects likely combine here: (i) the airway epithelial cell types are genuinely close in transcriptomic space (Basal↔Secretory↔Ciliated form a differentiation continuum, not clean islands), so nearest-neighbour attention naturally reaches across cluster boundaries; and (ii) because clusters are themselves labelled via imperfect signatures (previous point), some cells assigned to cluster A biologically resemble cluster B, mechanically diluting the diagonal. Attention plots should therefore be interpreted as *relational* — highlighting which cell types the model treats as most similar — rather than as a sharp cluster-purity readout.
+
 **Interpretability adds value even without refinement.** Decoupling GAT training from the clustering pipeline (interpretability-only mode) preserves the cleanest embeddings for clustering while still exposing a graph-attention view over the final cell-type communities — a useful compromise between predictive quality and biological explainability.
 
 ### 8.6 Limitations and Future Work
@@ -639,13 +645,12 @@ The attention diagonal quantifies within-cluster cohesion, while off-diagonal we
 The current best composite score (0.284) is respectable but leaves clear room for improvement. Several directions would be worth exploring:
 
 - **Broader hyperparameter space.** The grid search covers a limited slice of the parameter space (e.g. `learning_rate ∈ {5e-6, 1e-5, 2e-5, 3e-5}`, `latent_dim ∈ {12, 24, 32, 64}`). Extending both edges (higher latent dims, wider learning-rate schedules, longer training with early stopping) may uncover configurations that currently sit outside the searched region.
-- **Bayesian / adaptive search.** Replace the exhaustive grid with Bayesian optimisation (Optuna, W&B Sweeps) to explore the space more efficiently and probe non-uniform regions.
-- **Alternative GAT integration strategies.** The current binary choice “refinement on/off” is coarse. Softer combinations — e.g. residual GAT (`z = z_AE + λ · GAT(z_AE)`), or GAT applied only during clustering-graph construction — might harness attention without over-smoothing.
+- **Alternative GAT integration strategies.** The current binary choice "refinement on/off" is coarse. Softer combinations — e.g. residual GAT (`z = z_AE + λ · GAT(z_AE)`), or GAT applied only during clustering-graph construction — might harness attention without over-smoothing.
 - **DAE with tuned masking rates.** The DAE variant has more inductive bias against noise; a targeted DAE sweep with fine-grained `mask_rate` control could outperform the plain AE.
 - **Multi-metric selection.** The composite score is a single scalar aggregating three sub-scores. A Pareto-front analysis across silhouette, modularity, and cluster balance could surface configurations that are strong in one axis but discarded by the current weighting.
 - **Subtype-aware objectives.** To improve minor-type ARI, incorporating self-supervised contrastive losses (e.g. per-donor or per-batch positive pairs) could push the encoder toward finer discrimination without leaking reference labels.
+- **Stronger reference and signature validation.** Cross-checking against independent airway atlases, using curated marker panels from multiple studies, and quantifying inter-annotator agreement on ambiguous cells would give a firmer baseline against which to evaluate both clustering quality and attention diagonals.
 - **Cross-dataset validation.** Retraining on additional airway scRNA-seq cohorts would test the generalisability of the current best configuration beyond the Carraro et al. dataset.
-
 ---
 
 ## 9. References
