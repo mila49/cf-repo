@@ -573,6 +573,8 @@ The grid search across ~2,000 configurations selected `smooth-sweep-68` as the t
 | GAT refinement | disabled |
 | **Composite Score** | **0.284** |
 
+<img width="1282" height="675" alt="sweep_best" src="https://github.com/user-attachments/assets/6fc6026e-eed0-4fbf-ae96-026515b1e7c0" />
+
 ### 8.2 Quantitative Results
 
 Metrics computed on the full dataset (40,677 cells) after retraining the best configuration:
@@ -599,15 +601,11 @@ Two 1×3 UMAP panels compare the ground-truth annotations, the unsupervised Leid
 
 **Major cell-type view**
 
-<!-- ![Major UMAP](best_config_ae_umap_major.png) -->
-
-> _Placeholder — insert `best_config_ae_umap_major.png` here._
+<img width="1742" height="592" alt="major_umap" src="https://github.com/user-attachments/assets/ee210b3d-878f-46c9-aaf0-a1b6615c9f23" />
 
 **Minor cell-type view** (opacity encodes subtype rank within each major lineage)
 
-<!-- ![Minor UMAP](best_config_ae_umap_minor.png) -->
-
-> _Placeholder — insert `best_config_ae_umap_minor.png` here._
+<img width="1755" height="593" alt="minor_umap" src="https://github.com/user-attachments/assets/2bcf635c-af46-4e87-aed5-e1da345c69f4" />
 
 ### 8.4 GAT Attention Interpretability
 
@@ -615,15 +613,12 @@ Although the winning configuration does **not** use GAT for embedding refinement
 
 **Cluster attention heatmap** (rows = source cluster, columns = destination cluster; diagonal = within-cluster cohesion)
 
-<!-- ![Attention Heatmap](best_config_ae_attention_heatmap.png) -->
-
-> _Placeholder — insert `best_config_ae_attention_heatmap.png` here._
+<img width="806" height="625" alt="gat_att_matrix" src="https://github.com/user-attachments/assets/318f39d1-dbfd-4c4b-95d7-0bc2fe1eca33" />
 
 **Attention graph** (edges below 30% of max attention are hidden for readability)
 
-<!-- ![Attention Graph](best_config_ae_attention_graph.png) -->
+<img width="700" height="628" alt="gat_att_graph" src="https://github.com/user-attachments/assets/db0df6b4-d29a-4103-88b4-125d30dd100d" />
 
-> _Placeholder — insert `best_config_ae_attention_graph.png` here._
 
 The attention diagonal quantifies within-cluster cohesion, while off-diagonal weights highlight cross-lineage message passing (e.g. Basal ↔ Secretory transitions). This offers a biologically motivated interpretation of cell-type similarity that would otherwise be hidden behind categorical cluster IDs.
 
